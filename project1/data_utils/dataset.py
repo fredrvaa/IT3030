@@ -29,6 +29,14 @@ class Dataset:
     def test_flattened(self):
         return self._flatten_partition('test')
 
+    @property
+    def shape(self):
+        return self.train[0].image.shape
+
+    @property
+    def flattened_shape(self):
+        return self.train_flattened[0].image.shape
+
     def shuffle_partitions(self):
         np.random.shuffle(self.train)
         np.random.shuffle(self.val)
