@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Layer():
     def __init__(self, input_size, output_size):
         self.W = np.random.rand(input_size, output_size)
