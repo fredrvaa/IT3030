@@ -40,8 +40,8 @@ class DataGenerator():
         high = round(self._shape_ratio_range[1] * self._image_dim)
         shape_size = np.random.randint(low, high) if low != high else high
 
-        # Force shape_size to be at least 3 to make distinct shapes
-        if shape_size < 3: shape_size = 3 
+        # Force shape_size to be at least 5 to make distinct shapes
+        if shape_size < 5: shape_size = 5 
 
         # Select bounding box for shape to be in
         if self._image_dim == shape_size:
@@ -64,6 +64,12 @@ class DataGenerator():
         elif shape == Shapes.filled_sqaure:
             image[y1:y2, x1:x2] = 1 # Whole Square
         elif shape == Shapes.cross:
+            # Enforces odd number of pixels in each dimension of bounding box
+            # This makes sure the cross is symmetric
+            if (y2 - y1) % 2:
+                y2 -= 1
+            if (x2 - x1) % 2:
+                x2 -= 1
             image[y1:y2+1, round(np.mean([x1,x2]))] = 1 # Vertical line
             image[round(np.mean([y1,y2])), x1:x2+1] = 1 # Horizontal line
         elif shape == Shapes.vertical_line:
@@ -104,10 +110,10 @@ class DataGenerator():
 
 if __name__=='__main__':
     import matplotlib.pyplot as plt
-    
+
     # Generate dataset
     dataset = Dataset()
-    generator = DataGenerator(noise_level=0, shape_ratio_range=[0.005,1.0], n_samples=100)
+    generator = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.005,1.0], n_samples=100)
     generator.populate_dataset(dataset)
 
     # Plot first 25 samples of train set
