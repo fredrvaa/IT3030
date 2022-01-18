@@ -41,3 +41,16 @@ class Dataset:
         np.random.shuffle(self.train)
         np.random.shuffle(self.val)
         np.random.shuffle(self.test)
+
+    def load_data(self, flatten=False):
+        X_train = np.array([datapoint.image.flatten() if flatten else datapoint.image for datapoint in self.train])
+        y_train = np.array([datapoint.label for datapoint in self.train])
+
+        X_val = np.array([datapoint.image.flatten() if flatten else datapoint.image for datapoint in self.val])
+        y_val = np.array([datapoint.label for datapoint in self.val])
+
+        X_test = np.array([datapoint.image.flatten() if flatten else datapoint.image for datapoint in self.test])
+        y_test = np.array([datapoint.label for datapoint in self.test])
+
+
+        return (X_train, y_train), (X_val, y_val), (X_test, y_test)

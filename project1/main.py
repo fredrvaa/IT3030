@@ -4,8 +4,9 @@ from nn.network import Network
 import matplotlib.pyplot as plt
 
 dataset = DataGenerator(noise_level=0).generate_dataset()
+(X_train, y_train), (X_val, y_val), (X_test, y_test) = dataset.load_data(flatten=True)
 
-input_dim = dataset.flattened_shape[0]
+input_dim = X_train.shape[1]
 
 network = Network([input_dim, 20, 20, 1])
 
