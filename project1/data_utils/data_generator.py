@@ -1,6 +1,10 @@
-import numpy as np
 from enum import Enum
-from dataclasses import dataclass, field, fields
+from dataclasses import fields
+
+import numpy as np
+
+from .dataset import Dataset, DataPoint
+
 
 class Shapes(Enum):
     sqaure = 0
@@ -8,38 +12,6 @@ class Shapes(Enum):
     cross = 2
     horizontal_line = 3
     vertical_line = 4
-
-@dataclass
-class DataPoint:
-    image:np.ndarray
-    label:int
-
-@dataclass
-class Dataset:
-    train:list = field(default_factory=list)
-    val:list = field(default_factory=list)
-    test:list = field(default_factory=list)
-
-    def _flatten_partition(self, partition_name):
-        partition = getattr(self, partition_name)
-        return [DataPoint(datapoint.image.flatten(), datapoint.label) for datapoint in partition]
-
-    @property
-    def train_flattened(self):
-        return self._flatten_partition('train')
-    
-    @property
-    def val_flattened(self):
-        return self._flatten_partition('val')
-
-    @property
-    def test_flattened(self):
-        return self._flatten_partition('test')
-
-    def shuffle_partitions(self):
-        np.random.shuffle(self.train)
-        np.random.shuffle(self.val)
-        np.random.shuffle(self.test)
 
 class DataGenerator():
     def __init__(self, n_samples=1000, image_dim=50, noise_level=0.5, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False):
@@ -149,8 +121,6 @@ if __name__=='__main__':
     import matplotlib.pyplot as plt
 
     dataset = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.5,0.5], n_samples=100).generate_dataset()
-
-    dataset.shuffle_partitions()
 
     # Plot first 25 samples of train set
     n = 5
