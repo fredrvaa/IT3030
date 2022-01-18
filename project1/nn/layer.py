@@ -10,7 +10,9 @@ class Layer():
         return max(0, z)
 
     def forward_pass(self, X):
-        return np.dot(X, self.W) + self.b
+        self.input = X
+        self.output = np.dot(X, self.W) + self.b
+        return self.output
 
 if __name__ == '__main__':
     np.random.seed(0)
