@@ -3,7 +3,7 @@ from dataclasses import fields
 
 import numpy as np
 
-from .dataset import Dataset, DataPoint
+from data_utils.dataset import Dataset, DataPoint
 
 
 class Shapes(Enum):
@@ -14,7 +14,7 @@ class Shapes(Enum):
     vertical_line = 4
 
 class DataGenerator():
-    def __init__(self, n_samples=1000, image_dim=50, noise_level=0.5, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False):
+    def __init__(self, n_samples=1000, image_dim=50, noise_level=0.0, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False):
         self._image_dim = image_dim
         self._noise_level = noise_level
         self._shape_ratio_range = shape_ratio_range
@@ -103,7 +103,7 @@ class DataGenerator():
                 partition.append(datapoint)
 
 
-    def generate_dataset(self):
+    def generate_dataset(self) -> Dataset:
         '''Function used to generate a new dataset.
 
         Returns:
