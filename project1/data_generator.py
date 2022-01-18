@@ -1,7 +1,7 @@
 import numpy as np
+from copy import deepcopy
 from enum import Enum
 from dataclasses import dataclass, field, fields
-
 
 class Shapes(Enum):
     sqaure = 0
@@ -20,6 +20,22 @@ class Dataset:
     train:list = field(default_factory=list)
     val:list = field(default_factory=list)
     test:list = field(default_factory=list)
+
+    def _flatten_partition(self, partition_name):
+        partition = getattr(self, partition_name)
+        return [DataPoint(datapoint.image.flatten(), datapoint.label) for datapoint in partition]
+
+    @property
+    def train_flattened(self):
+        return self._flatten_partition('train')
+    
+    @property
+    def val_flattened(self):
+        return self._flatten_partition('val')
+
+    @property
+    def test_flattened(self):
+        return self._flatten_partition('test')
 
 class DataGenerator():
     def __init__(self, n_samples=1000, image_dim=50, noise_level=0.5, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False):
@@ -116,17 +132,17 @@ if __name__=='__main__':
     generator = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.005,1.0], n_samples=100)
     generator.populate_dataset(dataset)
 
-    # Plot first 25 samples of train set
-    n = 5
-    fig, axs = plt.subplots(n,n,figsize=(9,9))
-    for i in range(n):
-        for j in range(n):
-            image = dataset.train[i*n + j].image
-            label = dataset.train[i*n + j].label
-            axs[i][j].title.set_text(Shapes(label).name)
-            axs[i][j].set_xticks([])
-            axs[i][j].set_yticks([])
-            axs[i][j].imshow(image)
+    # # Plot first 25 samples of train set
+    # n = 5
+    # fig, axs = plt.subplots(n,n,figsize=(9,9))
+    # for i in range(n):
+    #     for j in range(n):
+    #         image = dataset.train[i*n + j].image
+    #         label = dataset.train[i*n + j].label
+    #         axs[i][j].title.set_text(Shapes(label).name)
+    #         axs[i][j].set_xticks([])
+    #         axs[i][j].set_yticks([])
+    #         axs[i][j].imshow(image)
 
-    plt.show()
+    # plt.show()
     
