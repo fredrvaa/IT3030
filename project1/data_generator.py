@@ -113,6 +113,12 @@ class DataGenerator():
         return image
 
     def populate_dataset(self, dataset):
+        '''Function used to populate an existing dataset.
+
+        Args:
+            dataset (Dataset): the dataset that should be populated
+        '''
+
         # Loop through partitions (train, val, test)
         for i, field in enumerate(fields(Dataset)):
             partition = getattr(dataset, field.name)
@@ -124,21 +130,25 @@ class DataGenerator():
                 datapoint = DataPoint(generated_image, shape.value)
                 partition.append(datapoint)
 
-            # Shuffle partition
-            np.random.shuffle(partition)
+
+    def generate_dataset(self):
+        '''Function used to generate a new dataset.
+
+        Returns:
+            A new Dataset object
+        '''
+
+        dataset = Dataset()
+        self.populate_dataset(dataset)
+        dataset.shuffle_partitions()
+        return dataset
+
 
 
 if __name__=='__main__':
     import matplotlib.pyplot as plt
 
-    # Generate dataset
-    dataset = Dataset()
-
-    noisy_generator = DataGenerator(image_dim=50, noise_level=0.5, shape_ratio_range=[0.005,1.0], n_samples=100)
-    generator = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.005,1.0], n_samples=100)
-
-    noisy_generator.populate_dataset(dataset)
-    generator.populate_dataset(dataset)
+    dataset = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.5,0.5], n_samples=100).generate_dataset()
 
     dataset.shuffle_partitions()
 
