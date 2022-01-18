@@ -1,5 +1,4 @@
 import numpy as np
-from copy import deepcopy
 from enum import Enum
 from dataclasses import dataclass, field, fields
 
@@ -36,6 +35,11 @@ class Dataset:
     @property
     def test_flattened(self):
         return self._flatten_partition('test')
+
+    def shuffle_partitions(self):
+        np.random.shuffle(self.train)
+        np.random.shuffle(self.val)
+        np.random.shuffle(self.test)
 
 class DataGenerator():
     def __init__(self, n_samples=1000, image_dim=50, noise_level=0.5, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False):
@@ -113,7 +117,7 @@ class DataGenerator():
         for i, field in enumerate(fields(Dataset)):
             partition = getattr(dataset, field.name)
 
-            # Construct partition
+            # Append images to partition
             for n in range(self._split[i]):
                 shape = Shapes(n%len(Shapes))
                 generated_image = self._generate_image(shape=shape)
@@ -129,20 +133,26 @@ if __name__=='__main__':
 
     # Generate dataset
     dataset = Dataset()
+
+    noisy_generator = DataGenerator(image_dim=50, noise_level=0.5, shape_ratio_range=[0.005,1.0], n_samples=100)
     generator = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.005,1.0], n_samples=100)
+
+    noisy_generator.populate_dataset(dataset)
     generator.populate_dataset(dataset)
 
-    # # Plot first 25 samples of train set
-    # n = 5
-    # fig, axs = plt.subplots(n,n,figsize=(9,9))
-    # for i in range(n):
-    #     for j in range(n):
-    #         image = dataset.train[i*n + j].image
-    #         label = dataset.train[i*n + j].label
-    #         axs[i][j].title.set_text(Shapes(label).name)
-    #         axs[i][j].set_xticks([])
-    #         axs[i][j].set_yticks([])
-    #         axs[i][j].imshow(image)
+    dataset.shuffle_partitions()
 
-    # plt.show()
+    # Plot first 25 samples of train set
+    n = 5
+    fig, axs = plt.subplots(n,n,figsize=(9,9))
+    for i in range(n):
+        for j in range(n):
+            image = dataset.train[i*n + j].image
+            label = dataset.train[i*n + j].label
+            axs[i][j].title.set_text(Shapes(label).name)
+            axs[i][j].set_xticks([])
+            axs[i][j].set_yticks([])
+            axs[i][j].imshow(image)
+
+    plt.show()
     
