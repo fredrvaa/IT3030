@@ -1,6 +1,7 @@
 import numpy as np
 
 from nn.layer import Layer
+from nn.loss import mse
 
 
 class Network():
@@ -11,6 +12,10 @@ class Network():
         for layer in self.layers:
             X = layer.forward_pass(X)
         return X
+
+    def fit(self, X_train, y_train):
+        for X in X_train:
+            self.forward_pass(X)
 
 if __name__ == '__main__':
     np.random.seed(0)
