@@ -1,50 +1,46 @@
+from abc import ABC, ABCMeta, abstractmethod
+
 import numpy as np
 
-class Activation:
-    @classmethod
-    def apply(cls, z):
-        raise NotImplementedError
+class Activation(ABC):
+    __metaclass__ = ABCMeta
 
-    @classmethod
-    def apply_derivative(cls, z):
-        raise NotImplementedError
+    @abstractmethod
+    def apply(self, z):
+        raise NotImplementedError('Subclass must implement apply()')
 
+    @abstractmethod
+    def apply_derivative(self, z):
+        raise NotImplementedError('Subclass must implement apply_derivative()')
+    
 class Linear(Activation):
-    @classmethod
-    def apply(cls, z):
+    def apply(self, z):
         return z
 
-    @classmethod
-    def apply_derivative(cls, z):
+    def apply_derivative(self, z):
         return np.ones(z.shape)
 
 class Relu(Activation):
-    @classmethod
-    def apply(cls, z):
+    def apply(self, z):
         return np.maximum(0, z)
 
-    @classmethod
-    def apply_derivative(cls, z):
+    def apply_derivative(self, z):
         return (z > 0) * 1
 
 class Sigmoid(Activation):
-    @classmethod
-    def apply(cls, z):
+    def apply(self, z):
         return 1 / (1 + np.exp(-z))
 
-    @classmethod
-    def apply_derivative(cls, z):
-        f = cls.apply(z)
+    def apply_derivative(self, z):
+        f = Relu.apply(z)
         return f * (1 - f)
 
 class Tanh(Activation):
-    @classmethod
-    def apply(cls, z):
+    def apply(self, z):
         return (np.exp(z) - np.exp(-z)) / (np.exp(z) + np.exp(-z))
 
-    @classmethod
-    def apply_derivative(cls, z):
-        f = cls.apply(z)
+    def apply_derivative(self, z):
+        f = Tanh.apply(z)
         return 1 - f**2
 
 
