@@ -4,7 +4,7 @@ from nn.layer import Layer, HiddenLayer
 from nn.loss import Loss, MSE, CrossEntropy
 
 class Network():
-    def __init__(self, loss_function:Loss=CrossEntropy, learning_rate:float=0.001, batch_size=32):
+    def __init__(self, loss_function:Loss=CrossEntropy, learning_rate:float=0.001, batch_size=32, wreg=0.01, wrt=None):
         self.layers = []
         self.loss_function = loss_function()
         self.learning_rate = learning_rate

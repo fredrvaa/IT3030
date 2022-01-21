@@ -38,7 +38,7 @@ class InputLayer(Layer):
 class HiddenLayer(Layer):
     name = 'Hidden layer'
     
-    def __init__(self, input_size, output_size, learning_rate=0.001, activation:Activation=Relu):
+    def __init__(self, input_size, output_size, learning_rate=0.001, activation:Activation=Relu, weight_range='', bias_range=''):
         super().__init__()
 
         self.size = output_size
