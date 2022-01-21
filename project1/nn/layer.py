@@ -61,7 +61,7 @@ class HiddenLayer(Layer):
 
     def forward_pass(self, X):
         self.input = X
-        self.output = self._activation.apply(np.dot(X, self.W) + self.b)
+        self.output = self._activation(np.dot(X, self.W) + self.b)
         return self.output
 
     def backward_pass(self, J_L_N):
@@ -71,7 +71,7 @@ class HiddenLayer(Layer):
         """
 
         # Compute intermediate jacobians
-        J_N_sum = self._activation.apply_derivative(np.diag(J_L_N))
+        J_N_sum = self._activation.gradient(np.diag(J_L_N))
         J_N_N_prev = np.dot(J_N_sum, self.W.T)
         J_N_W_hat = np.outer(self.input, np.diag(J_N_sum))
         # Compute final jacobians

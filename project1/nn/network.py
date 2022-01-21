@@ -35,9 +35,9 @@ class Network():
             for i, X in enumerate(X_train):
                 y_hat = self._forward_pass(X)
                 
-                aggregated_output_error += self.loss_function.apply(y_hat, y_train[i])
+                aggregated_output_error += self.loss_function(y_hat, y_train[i])
 
-                J_L_S = self.loss_function.apply_derivative(y_hat, y_train[i])
+                J_L_S = self.loss_function.gradient(y_hat, y_train[i])
                 self._backward_pass(J_L_S)
 
                 if (epoch*len(X_train) + i + 1) % self.batch_size == 0:

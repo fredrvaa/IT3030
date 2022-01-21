@@ -3,58 +3,63 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 class Activation(ABC):
+    @abstractmethod
+    def __call__(self, z):
+        raise NotImplementedError('Subclass must implement __call__()')
 
     @abstractmethod
-    def apply(self, z):
-        raise NotImplementedError('Subclass must implement apply()')
-
-    @abstractmethod
-    def apply_derivative(self, z):
-        raise NotImplementedError('Subclass must implement apply_derivative()')
+    def gradient(self, z):
+        raise NotImplementedError('Subclass must implement gradient()')
     
 class Linear(Activation):
-    def apply(self, z):
+    def __call__(self, z):
         return z
 
-    def apply_derivative(self, z):
+    def gradient(self, z):
         return np.ones(z.shape)
 
 class Relu(Activation):
-    def apply(self, z):
+    def __call__(self, z):
         return np.maximum(0, z)
 
-    def apply_derivative(self, z):
+    def gradient(self, z):
         return (z > 0) * 1
 
 class Sigmoid(Activation):
-    def apply(self, z):
+    def __call__(self, z):
         return 1 / (1 + np.exp(-z))
 
-    def apply_derivative(self, z):
-        f = self.apply(z)
+    def gradient(self, z):
+        f = self(z)
         return f * (1 - f)
 
 class Tanh(Activation):
-    def apply(self, z):
+    def __call__(self, z):
         return (np.exp(z) - np.exp(-z)) / (np.exp(z) + np.exp(-z))
 
-    def apply_derivative(self, z):
-        f = Tanh.apply(z)
+    def gradient(self, z):
+        f = self(z)
         return 1 - f**2
 
 
 if __name__ == '__main__':
+    # Small test suite
     z = np.array([-1, -0.5, 0, 0.5, 1])
 
-    print('Linear:', Linear.apply(z))
-    print('Linear derivative:', Linear.apply_derivative(z))
+    linear = Linear()
+    relu = Relu()
+    sigmoid = Sigmoid()
+    tanh = Tanh()
 
-    print('ReLU:', Relu.apply(z))
-    print('ReLU derivative:', Relu.apply_derivative(z))
+    print('Linear:', linear(z))
+    print('Linear derivative:', linear.gradient(z))
 
-    print('Sigmoid:', Sigmoid.apply(z))
-    print('Sigmoid derivative:', Sigmoid.apply_derivative(z))
+    print('ReLU:', relu(z))
+    print('ReLU derivative:', relu.gradient(z))
 
-    print('tanh:', Tanh.apply(z))
-    print('tanh derivative:', Tanh.apply_derivative(z))
+    print('Sigmoid:', sigmoid(z))
+    print('Sigmoid derivative:', sigmoid.gradient(z))
+
+    print('tanh:', tanh(z))
+    print('tanh derivative:', tanh.gradient(z))
 
