@@ -14,12 +14,13 @@ class Shapes(Enum):
     vertical_line = 4
 
 class DataGenerator():
-    def __init__(self, n_samples=1000, image_dim=50, noise_level=0.0, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False):
+    def __init__(self, n_samples=1000, image_dim=50, noise_level=0.0, shape_ratio_range=[0.1,1.0], split_ratios=[0.7,0.2,0.1], centered=False, onehot=True):
         self._image_dim = image_dim
         self._noise_level = noise_level
         self._shape_ratio_range = shape_ratio_range
         self._split = self._get_split(n_samples, split_ratios)
         self._centered = centered
+        self._onehot = onehot
 
     def _get_split(self, n_samples, split_ratios):
         split = [int(x * n_samples) for x in split_ratios] # Split n_samples into partitions weighted by split_ratios
@@ -84,6 +85,11 @@ class DataGenerator():
 
         return image
 
+    def _onehot_encode_label(self, label):
+        onehot_label = np.zeros(len(Shapes))
+        onehot_label[label] = 1
+        return onehot_label
+
     def populate_dataset(self, dataset):
         '''Function used to populate an existing dataset.
 
@@ -99,7 +105,8 @@ class DataGenerator():
             for n in range(self._split[i]):
                 shape = Shapes(n%len(Shapes))
                 generated_image = self._generate_image(shape=shape)
-                datapoint = DataPoint(generated_image, shape.value)
+                label = self._onehot_encode_label(shape.value) if self._onehot else shape.value
+                datapoint = DataPoint(generated_image, label)
                 partition.append(datapoint)
 
 

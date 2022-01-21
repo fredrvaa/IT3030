@@ -1,9 +1,8 @@
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
 import numpy as np
 
 class Activation(ABC):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def apply(self, z):
@@ -32,7 +31,7 @@ class Sigmoid(Activation):
         return 1 / (1 + np.exp(-z))
 
     def apply_derivative(self, z):
-        f = Relu.apply(z)
+        f = self.apply(z)
         return f * (1 - f)
 
 class Tanh(Activation):
