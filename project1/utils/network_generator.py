@@ -22,7 +22,8 @@ class NetworkGenerator:
             if 'activation' in layer:
                 layer['activation']=self._str_to_class(nn.activation, layer['activation'])
 
-        parsed_config['layers']['output']['type'] = self._str_to_class(nn.layer, parsed_config['layers']['output']['type'])
+        if 'output' in parsed_config['layers']:
+            parsed_config['layers']['output']['type'] = self._str_to_class(nn.layer, parsed_config['layers']['output']['type'])
         return parsed_config
 
     def generate_network(self) -> Network:
@@ -31,12 +32,17 @@ class NetworkGenerator:
         network = Network(**{k: v for k, v in globals.items() if v is not None})
 
         prev_size = layers['input']['size']
+
+        # Add input layer
         network.add_layer(InputLayer(prev_size))
+
+        # Add hidden layers
         for layer in layers['hidden']:
             network.add_layer(HiddenLayer(input_size=prev_size, **{k: v for k, v in layer.items() if v is not None}))
             prev_size = layer['output_size']
 
-        if type(layers['output']['type']) is SoftmaxLayer:
-            network.add_layer(SoftmaxLayer(prev_size))
+        # Add output layer if specified
+        if 'output' in layers:
+            network.add_layer(layers['output']['type'](prev_size))
 
         return network
