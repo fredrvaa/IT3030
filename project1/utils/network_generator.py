@@ -1,3 +1,4 @@
+from parso import parse
 import nn.loss
 import nn.activation
 import nn.layer
@@ -20,10 +21,15 @@ class NetworkGenerator:
         for layer in parsed_config['layers']['hidden']:
             layer['output_size'] = layer.pop('size')
             if 'activation' in layer:
-                layer['activation']=self._str_to_class(nn.activation, layer['activation'])
+                layer['activation'] = self._str_to_class(nn.activation, layer['activation'])
+            if 'weight_range' in layer:
+                layer['weight_range'] = eval(layer['weight_range'])
+            if 'bias_range' in layer:
+                layer['bias_range'] = eval(layer['bias_range'])
 
         if 'output' in parsed_config['layers']:
             parsed_config['layers']['output']['type'] = self._str_to_class(nn.layer, parsed_config['layers']['output']['type'])
+
         return parsed_config
 
     def generate_network(self) -> Network:

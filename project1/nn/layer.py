@@ -27,11 +27,19 @@ class InputLayer(Layer):
         return X
 
 class HiddenLayer(Layer):    
-    def __init__(self, input_size, output_size, learning_rate=0.001, activation:Activation=Relu, weight_range='', bias_range=''):
+    def __init__(self, 
+                input_size:int, 
+                output_size:int, 
+                learning_rate:float=0.001, 
+                activation:Activation=Relu, 
+                weight_range:tuple=(-1,1), 
+                bias_range:tuple=(0,1)
+            ):
+            
         self.size = output_size
 
-        self.W = np.random.rand(input_size, output_size) - 0.5
-        self.b = np.random.rand(output_size) - 0.5
+        self.W = np.random.uniform(weight_range[0], weight_range[1], (input_size, output_size))
+        self.b = np.random.uniform(bias_range[0], bias_range[1], output_size)
 
         self._learning_rate = learning_rate
         self._activation = activation()
