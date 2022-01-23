@@ -5,12 +5,6 @@ import numpy as np
 from nn.activation import Activation, Relu
 
 class Layer(ABC):
-    name = None
-
-    def __init__(self):
-        if self.name == None:
-            raise NotImplementedError('Subclasses must define name')
-
     @abstractmethod
     def forward_pass(self, X):
         raise NotImplementedError('Subclasses must implement forward_pass()')
@@ -20,13 +14,10 @@ class Layer(ABC):
         raise NotImplementedError('Subclasses must implement backward_pass()')
 
     def __str__(self):
-        return f'{self.name} \t {self.size} neurons'
+        return f'{self.__class__.__name__} \t {self.size} neurons'
 
 class InputLayer(Layer):
-    name = 'Input layer'
-
     def __init__(self, input_size):
-        super().__init__()
         self.size = input_size
 
     def forward_pass(self, X):
@@ -35,12 +26,8 @@ class InputLayer(Layer):
     def backward_pass(self, X):
         return X
 
-class HiddenLayer(Layer):
-    name = 'Hidden layer'
-    
+class HiddenLayer(Layer):    
     def __init__(self, input_size, output_size, learning_rate=0.001, activation:Activation=Relu, weight_range='', bias_range=''):
-        super().__init__()
-
         self.size = output_size
 
         self.W = np.random.rand(input_size, output_size) - 0.5
@@ -88,10 +75,7 @@ class HiddenLayer(Layer):
         
 
 class SoftmaxLayer(Layer):
-    name = 'Softmax layer'
-
     def __init__(self, input_size):
-        super().__init__()
         self.size = input_size
 
     def forward_pass(self, X):

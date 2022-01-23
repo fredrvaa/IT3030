@@ -11,6 +11,9 @@ class Loss(ABC):
     def gradient(self, z):
         raise NotImplementedError('Subclass must implement gradient()')
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class MSE(Loss):
     def __call__(self, y_hat, y_true):
