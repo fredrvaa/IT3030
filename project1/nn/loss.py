@@ -2,13 +2,33 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+
 class Loss(ABC):
+    """Abstract loss class.
+
+    Classes can inherit from this class to make sure __call__() and gradient() are implemented.
+    """
+
     @abstractmethod
-    def __call__(self, y_hat, y_true):
+    def __call__(self, y_hat: np.ndarray, y: np.ndarray) -> float:
+        """Calculates the loss using the implemented loss function.
+
+        :param y_hat: The predicted output tensor.
+        :param y: The ground truth output tensor.
+        :return: The calculated loss between y_hat and y
+        """
+
         raise NotImplementedError('Subclass must implement __call__()')
 
     @abstractmethod
-    def gradient(self, z):
+    def gradient(self, y_hat: np.ndarray, y: np.ndarray) -> float:
+        """Calculates the gradient of the loss function with respect to y_hat.
+
+        :param y_hat: The predicted output tensor.
+        :param y: The ground truth output tensor.
+        :return: The calculated gradient of the loss between y_hat and y
+        """
+
         raise NotImplementedError('Subclass must implement gradient()')
 
     def __str__(self):
@@ -16,30 +36,66 @@ class Loss(ABC):
 
 
 class MSE(Loss):
-    def __call__(self, y_hat, y_true):
-        return 1/2 * np.mean((y_true - y_hat)**2)
+    """Class implementing the mean squared error (MSE) loss function."""
 
-    def gradient(self, y_hat, y_true):
-        return - (y_true - y_hat)
+    def __call__(self, y_hat, y) -> float:
+        """Calculates the loss using the mean squared error loss function.
+
+        :param y_hat: The predicted output tensor.
+        :param y: The ground truth output tensor.
+        :return: The mean squared error loss between y_hat and y
+        """
+
+        return 1/2 * np.mean((y_hat - y)**2)
+
+    def gradient(self, y_hat, y) -> float:
+        """Calculates the gradient of the mean squared error loss function with respect to y_Hat.
+
+        :param y_hat: The predicted output tensor.
+        :param y: The ground truth output tensor.
+        :return: The calculated gradient of the mean squared error loss between y_hat and y
+        """
+
+        return np.mean(y_hat - y)
+
 
 class CrossEntropy(Loss):
-    def __call__(self,  y_hat, y_true, epsilon=1e-7):
-        y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
-        return - np.mean((1-y_true) * np.log(1-y_hat) + y_true * np.log(y_hat))
+    """Class implementing the cross entropy loss function."""
 
-    def gradient(self, y_hat, y_true, epsilon=1e-7):
+    def __call__(self,  y_hat, y, epsilon=1e-7) -> float:
+        """Calculates the loss using the cross entropy loss function.
+
+        :param y_hat: The predicted output tensor.
+        :param y: The ground truth output tensor.
+        :param epsilon: A small term used to clip y_hat such that we don't take log(0).
+        :return: The cross entropy loss between y_hat and y
+        """
+
         y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
-        return - (1 - y_true) / (1 - y_hat) + y_true / y_hat
+        return - np.mean((1-y) * np.log(1-y_hat) + y * np.log(y_hat))
+
+    def gradient(self, y_hat, y, epsilon=1e-7) -> float:
+        """Calculates the gradient of the cross entropy loss function with respect to y_hat.
+
+        :param y_hat: The predicted output tensor.
+        :param y: The ground truth output tensor.
+        :param epsilon: A small term used to clip y_hat such that we don't divide by 0.
+        :return: The calculated gradient of the cross entropy loss between y_hat and y
+        """
+
+        y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
+        return - np.mean((1 - y) / (1 - y_hat) + y / y_hat)
+
 
 if __name__ == '__main__':
     # Small test suite
-    y_hat = np.array([1,0,0])
-    y_true = np.array([0,1,0])
+    y_hat = np.array([1, 0, 0])
+    y = np.array([0, 1, 0])
 
     mse = MSE()
     ce = CrossEntropy()
 
-    print("MSE loss: ", mse(y_hat, y_true))
-    print("MSE gradient: ", mse.gradient(y_hat, y_true))
-    print("Cross entropy loss: ", ce(y_hat, y_true))
-    print("Cross entropy gradient: ", ce.gradient(y_hat, y_true))
+    print("MSE loss: ", mse(y_hat, y))
+    print("MSE gradient: ", mse.gradient(y_hat, y))
+    print("Cross entropy loss: ", ce(y_hat, y))
+    print("Cross entropy gradient: ", ce.gradient(y_hat, y))
