@@ -72,8 +72,8 @@ class HiddenLayer(Layer):
                  output_size: int,
                  learning_rate: float = 0.001,
                  activation: Activation = Relu,
-                 weight_range: tuple = (-1, 1),
-                 bias_range: tuple = (0, 1)
+                 weight_range: tuple(float) = (-1, 1),
+                 bias_range: tuple(float) = (0, 1)
                  ):
         """
         :param input_size: Size of the input to the layer.

@@ -3,13 +3,8 @@ from utils.network_generator import NetworkGenerator
 
 import matplotlib.pyplot as plt
 
-import yaml
-
-with open("config.yaml", "r") as stream:
-    config = yaml.safe_load(stream)
-
 # Generate network
-network = NetworkGenerator(config).generate_network()
+network = NetworkGenerator("config.yaml").generate_network()
 
 print(network)
 

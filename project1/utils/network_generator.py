@@ -1,22 +1,56 @@
-from parso import parse
+import yaml
+
 import nn.loss
 import nn.activation
 import nn.layer
-from nn.layer import InputLayer, HiddenLayer, SoftmaxLayer
+import nn.regularization
+from nn.layer import InputLayer, HiddenLayer
 from nn.network import Network
 
-class NetworkGenerator:
-    def __init__(self, config):
-        self._config = self._parse_config(config)
-    
 
-    def _str_to_class(self, module, classname):
+class NetworkGenerator:
+    """A utility class used to parse a config file and generate a neural network using the nn package."""
+
+    def __init__(self, config_file: str):
+        """
+        :param config_file: Path to a config file.
+
+        The config file is loaded.
+        """
+        with open(config_file, "r") as stream:
+            config = yaml.safe_load(stream)
+
+        self._config = self._parse_config(config)
+
+    def _str_to_class(self, module: str, classname: str):
+        """ Gets class from a module using strings of the module name and classname.
+
+        This is used to dynamically load classes from strings in the config file.
+
+        :param module:
+        :param classname:
+        :return: The class as an attribute.
+        """
+
         return getattr(module, classname)
 
     def _parse_config(self, config: dict) -> dict:
+        """Parses a config by dynamically load objects from strings in the config file.
+
+        Example:
+            Given the dictionary: {layers:{output:{type:'SoftMax}}}. The string 'SoftMax' is converted to the
+            SoftMax object from the nn.layer module. A softmax layer can then be instantiated by:
+            layers['output']['type']().
+
+        :param config: A config dictionary containing strings instead of objects.
+        :return: A new config dictionary with objects instead of strings.
+        """
+
         parsed_config = config.copy()
         if 'loss_function' in parsed_config['globals']:
             parsed_config['globals']['loss_function'] = self._str_to_class(nn.loss, parsed_config['globals']['loss_function'])
+        if 'wrt' in parsed_config['globals']:
+            parsed_config['globals']['wrt'] = self._str_to_class(nn.regularization, parsed_config['globals']['wrt'])
 
         for layer in parsed_config['layers']['hidden']:
             layer['output_size'] = layer.pop('size')
@@ -33,6 +67,11 @@ class NetworkGenerator:
         return parsed_config
 
     def generate_network(self) -> Network:
+        """Generates a network based on the config file that was provided when instantiating the generator.
+
+        :return: A Network object with layers and hyperparameters as specified by the config file.
+        """
+
         globals = self._config['globals']
         layers = self._config['layers']
         network = Network(**{k: v for k, v in globals.items() if v is not None})
