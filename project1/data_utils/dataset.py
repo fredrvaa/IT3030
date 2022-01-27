@@ -114,6 +114,23 @@ class Dataset:
 
         return (X_train, y_train), (X_val, y_val), (X_test, y_test)
 
+    def _set_ax(self, ax, data: DataPoint) -> None:
+        """Utility method for creating a plot of the image.
+
+        Manipulates ax in place.
+
+        :param ax: The axis to plot the data on.
+        :param data: The Datapoint to be plotted
+        """
+
+        image_dim: int = data[0].image.shape[0] - 1
+        ax.set_title(self.labels(data.label).name)
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.imshow(data.image, cmap='cividis')
+        ax.set_xlim(0, image_dim)
+        ax.set_ylim(0, image_dim)
+
     def visualize_data(self, partition_name: str, n_samples: int = 10) -> None:
         """Visualizes n random samples of the chosen dataset/partition.
 
@@ -124,20 +141,13 @@ class Dataset:
         partition = getattr(self, partition_name)
         random_data: list[DataPoint] = np.random.choice(partition, n_samples, replace=False)
 
-        image_dim: int = random_data[0].image.shape[0] - 1
+
         grid_size: int = int(np.ceil(np.sqrt(n_samples)))
         fig, axs = plt.subplots(grid_size, grid_size, figsize=(12, 12))
 
         for data, ax in itertools.zip_longest(random_data, axs.flat):
             if data is not None:
-                ax.set_title(self.labels(data.label).name)
-                ax.grid(which='minor')
-                ax.set_xticklabels([])
-                ax.set_yticklabels([])
-                ax.imshow(data.image, cmap='cividis')
-                ax.set_xlim(0, image_dim)
-                ax.set_ylim(0, image_dim)
-                ax.grid()
+                self._set_ax(ax, data)
             else:
                 ax.remove()
 
@@ -153,15 +163,8 @@ class Dataset:
         partition = getattr(self, partition_name)
         data: DataPoint = partition[idx]
 
-        image_dim: int = data.image.shape[0] - 1
         fig, ax = plt.subplots(figsize=(12,12))
 
-        ax.set_title(self.labels(data.label).name)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.imshow(data.image, cmap='cividis')
-        ax.set_xlim(0, image_dim)
-        ax.set_ylim(0, image_dim)
-        ax.grid()
+        self._set_ax(ax, data)
 
         plt.show()
