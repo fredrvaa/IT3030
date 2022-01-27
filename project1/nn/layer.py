@@ -70,10 +70,10 @@ class HiddenLayer(Layer):
     def __init__(self,
                  input_size: int,
                  output_size: int,
-                 learning_rate: float = 0.001,
+                 learning_rate: float = 0.01,
                  activation: Activation = Relu,
-                 weight_range: tuple(float) = (-1, 1),
-                 bias_range: tuple(float) = (0, 1)
+                 weight_range: tuple[float] = (-0.1, 0.1),
+                 bias_range: tuple[float] = (0, 0)
                  ):
         """
         :param input_size: Size of the input to the layer.
@@ -92,53 +92,62 @@ class HiddenLayer(Layer):
         self._learning_rate: int = learning_rate
         self._activation: Activation = activation()
 
-        self.W_gradients = []
-        self.b_gradients = []
+        self.W_gradients: list[np.ndarray] = []
+        self.b_gradients: list[np.ndarray] = []
 
-        self.input = None
-        self.output = None
+        self.input: np.ndarray = None
+        self.output: np.ndarray = None
 
     def update_parameters(self) -> None:
         """Updates all weights and biases using the accumulated gradients and clears the gradients."""
 
-        self.W -= self._learning_rate * np.sum(self.W_gradients, axis=0)
+        self.W -= self._learning_rate * np.mean(self.W_gradients, axis=0)
         self.W_gradients = []
-        self.b -= self._learning_rate * np.sum(self.b_gradients, axis=0)
+        self.b -= self._learning_rate * np.mean(self.b_gradients, axis=0)
         self.b_gradients = []
 
     def forward_pass(self, X: np.ndarray) -> np.ndarray:
-        """Propagates the input through the layer by applying weights, biases, and activation function of the layer.
+        """Computes and returns the activation of the input using the weights,
+        biases, and activation function of the layer.
 
-        :param X: The input tensor.
-        :return: The output tensor.
+        :param X: The input activation tensor.
+        :return: The output activation tensor.
         """
 
         self.input = X
         self.output = self._activation(np.dot(X, self.W) + self.b)
+        # if self.size == 5:
+        #     print(self.output)
         return self.output
 
     def backward_pass(self, J_L_N: np.ndarray) -> np.ndarray:
-        """Backpropagates the jacobian through the layer by finding the new jacobian using the previous one.
+        """Computes and returns the jacobian of the loss with respect to the upstream layer M (J_L_M).
 
-        :param J_L_N: The computed jacobian passed from the downstream layer.
-        :return: The computed jacobian from this layer.
+        Here, we assume the current layer to be layer N, and the upstream layer in a network to be layer M.
+        A network might look something like this: Input -> M-1 -> M -> N -> N+1 -> Softmax.
+
+        J_L_N will be passed from the downstream layer (N+1) during the iterative backpropagation algorithm.
+        J_L_M is computed here along with the jacobians used to update the parameters (J_L_W and J_L_b).
+
+        :param J_L_N: The jacobian of the loss with respect to the current layer (N).
+        :return : The computed jacobian of the loss with respect to the upstream layer (M).
         """
 
         # Compute intermediate jacobians
-
-        J_N_sum = self._activation.gradient(np.diag(J_L_N))
-        J_N_N_prev = np.dot(J_N_sum, self.W.T)
+        J_N_sum = self._activation.gradient(np.diag(self.output))
+        J_N_M = np.dot(J_N_sum, self.W.T)
         J_N_W_hat = np.outer(self.input, np.diag(J_N_sum))
+
         # Compute final jacobians
         J_L_W = J_L_N * J_N_W_hat
         J_L_b = np.diag(J_N_sum)
-        J_L_N_prev = np.dot(J_L_N, J_N_N_prev)
+        J_L_M = np.dot(J_L_N, J_N_M)
 
         # Store J_L_W and J_L_b for future parameter update
         self.W_gradients.append(J_L_W)
         self.b_gradients.append(J_L_b)
 
-        return J_L_N_prev
+        return J_L_M
 
 
 class SoftmaxLayer(Layer):
@@ -154,7 +163,7 @@ class SoftmaxLayer(Layer):
         self.output = None
 
     def forward_pass(self, X: np.ndarray) -> np.ndarray:
-        """Propagates the input through the layer by computing the softmax of the input.
+        """Computes and returns the softmax of the input.
 
         :param X: The input tensor.
         :return: The softmaxed output tensor.
@@ -166,23 +175,29 @@ class SoftmaxLayer(Layer):
         return self.output
 
     def backward_pass(self, J_L_S: np.ndarray) -> np.ndarray:
-        """Backpropagates the jacobian through the layer by finding the new jacobian using the previous one.
+        """Computes and returns the jacobian of the loss with respect to the last hidden layer M (J_L_M).
 
-        :param J_L_S: The computed jacobian with respect to the output.
-        :return: The computed jacobian from this layer.
+        This layer is the output softmax layer, and we assume the upstream hidden layer to be layer M.
+        A network might look something like this: Input -> M-1 -> M -> Softmax.
+
+        J_L_S is the jacobian of the loss with respect to the output. Here we compute the jacobian of the loss
+        with respect to the last layer (J_L_M). This is done in a rather manual fashion as seen in the lecture slides.
+
+        :param J_L_S: The jacobian of the loss with respect to the softmaxed output.
+        :return : The computed jacobian of the loss with respect to the upstream layer (M).
         """
 
-        J_S_N = np.diag(self.output)
+        J_S_M = np.diag(self.output)
 
-        for i in range(len(J_S_N)):
-            for j in range(len(J_S_N)):
+        for i in range(len(J_S_M)):
+            for j in range(len(J_S_M)):
                 if i == j:
-                    J_S_N[i][j] = self.output[i] - self.output[i] ** 2
+                    J_S_M[i][j] = self.output[i] - self.output[i] ** 2
                 else:
-                    J_S_N[i][j] = -self.output[i] * self.output[j]
+                    J_S_M[i][j] = -self.output[i] * self.output[j]
 
-        J_L_N = np.dot(J_L_S, J_S_N)
-        return J_L_N
+        J_L_M = np.dot(J_L_S, J_S_M)
+        return J_L_M
 
 
 if __name__ == '__main__':

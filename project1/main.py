@@ -1,24 +1,30 @@
+import numpy as np
+
 from data_utils.data_generator import DataGenerator
+from data_utils.dataset import Dataset
+from nn.network import Network
 from utils.network_generator import NetworkGenerator
 
-import matplotlib.pyplot as plt
-
 # Generate network
-network = NetworkGenerator("config.yaml").generate_network()
+network: Network = NetworkGenerator("config.yaml").generate_network()
 
 print(network)
 
 # Generate dataset
-dataset = DataGenerator(n_samples=1000, noise_level=0, image_dim=50).generate_dataset()
+dataset: Dataset = DataGenerator(n_samples=1000, noise_level=0, image_dim=10).generate_dataset()
 (X_train, y_train), (X_val, y_val), (X_test, y_test) = dataset.load_data(flatten=True)
 
 # Train network
 network.fit(X_train, y_train, epochs=10)
 
-# Predict a case
-y = y_train[0]
-y_hat = network.predict(X_train[0])
+network.visualize_fit()
 
-print(f'y: {y} \ny_hat: {y_hat}')
+# Predict a case
+idx = np.random.randint(1)
+y = y_train[idx]
+y_hat = network.predict(X_train[idx])
+
+print(y, y_hat)
+
 
 

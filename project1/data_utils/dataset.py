@@ -89,7 +89,6 @@ class Dataset:
         :return: Tuple (images, labels) for the partition
         """
 
-        print()
         partition = getattr(self, partition_name)
         X = np.array([datapoint.image.flatten() if flatten else datapoint.image for datapoint in partition])
         y = np.array([self._onehot_encode_label(datapoint.label)

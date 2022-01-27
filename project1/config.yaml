@@ -1,28 +1,27 @@
 globals:
   loss_function: CrossEntropy # {MSE, CrossEntropy}
-  learning_rate: 0.1
+  learning_rate: 0.01
   batch_size: 32
   wreg: 0.001
   wrt: L1 # {L1, L2, none}
 layers:
   input:
-    size: 2500
+    size: 100
   hidden:
-    - size: 100
+    - size: 200
       activation: Relu # {Linear, Relu, Sigmoid, Tanh}
-      weight_range: (-0.1, 0.1)
-      bias_range: (0,1)
-      learning_rate: 0.1
-    - size: 50
-      activation: Relu # {Linear, Relu, Sigmoid, Tanh}
-      weight_range: (-0.1, 0.1)
-      bias_range: (0,1)
-      learning_rate: 0.1
+      weight_range: (-0.5, 0.5)
+      bias_range: (0,0)
+      learning_rate: 0.01
     - size: 20
       activation: Relu # {Linear, Relu, Sigmoid, Tanh}
-      weight_range: (-0.1, 0.1)
+      weight_range: (-0.5, 0.5)
+      bias_range: (0,0)
+      learning_rate: 0.01
     - size: 5
-      bias_range: (0,1)
-      learning_rate: 0.1
+      activation: Relu # {Linear, Relu, Sigmoid, Tanh}
+      weight_range: (-0.5, 0.5)
+      bias_range: (0,0)
+      learning_rate: 0.01
   output:
     type: SoftmaxLayer # {SoftmaxLayer}

@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 from nn.layer import Layer, HiddenLayer
@@ -27,12 +28,15 @@ class Network:
         :param wrt: The weight regularization type.
         """
 
-        self.layers = []
-        self.loss_function = loss_function()
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.wreg = wreg
-        self.wrt = wrt()
+        self.layers: list[Layer] = []
+        self.loss_function: Loss = loss_function()
+        self.learning_rate: int = learning_rate
+        self.batch_size: int = batch_size
+        self.wreg: float = wreg
+        self.wrt: Regularization = wrt()
+
+        self.training_loss = []
+        self.validation_loss = []
     
     def _forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Propagates a single input sample through the whole network (input-, hidden-, and output layers).
@@ -44,6 +48,7 @@ class Network:
         output = X
         for layer in self.layers:
             output = layer.forward_pass(output)
+
         return output
 
     def _backward_pass(self, J_L_S: np.ndarray) -> None:
@@ -59,8 +64,12 @@ class Network:
     def _update_parameters(self) -> None:
         """Updates the parameters in all hidden layers (only layers with parameters) of the network."""
 
+        layer: HiddenLayer
         for layer in [layer for layer in self.layers if type(layer) == HiddenLayer]:
+            # if layer.size == 5:
+            #     print("W", layer.W, '\ndW', np.mean(layer.W_gradients, axis=0))
             layer.update_parameters()
+
 
     def add_layer(self, layer: Layer) -> None:
         """Appends a layer to the network.
@@ -81,22 +90,46 @@ class Network:
         :param epochs: Number of times the whole training set is passed through the network.
         """
 
+        self.training_loss = []
+        self.validation_loss = []
+
         print('Fitting model to data...')
         for epoch in range(epochs):
             print(f'Epoch {epoch}')
-            aggregated_output_error = 0
+            aggregated_training_loss = 0
             for i, X in enumerate(X_train):
                 y_hat = self._forward_pass(X)
-                
-                aggregated_output_error += self.loss_function(y_hat, y_train[i])
+                #print(y_hat)
+                aggregated_training_loss += self.loss_function(y_hat, y_train[i])
 
                 J_L_S = self.loss_function.gradient(y_hat, y_train[i])
                 self._backward_pass(J_L_S)
 
                 if (epoch*len(X_train) + i + 1) % self.batch_size == 0:
                     self._update_parameters()
-            mean_output_error = aggregated_output_error / (i + 1)
-            print('Mean output error:', mean_output_error)
+            mean_training_loss = aggregated_training_loss / (i + 1)
+            self.training_loss.append([epoch, mean_training_loss])
+
+        self.training_loss = np.array(self.training_loss)
+        self.validation_loss = np.array(self.validation_loss)
+
+    def visualize_fit(self) -> None:
+        """Visualizes training and validation loss recorded during the previous fit of the network."""
+        fig, ax = plt.subplots(figsize=(12, 12))
+        train_x = self.training_loss[:, 0]
+        train_y = self.training_loss[:, 1]
+        #val_x = self.validation_loss[:, 0]
+        #val_y = self.validation_loss[:, 1]
+
+        ax.plot(train_x, train_y, label='Training loss')
+        #ax.plot(val_x, val_y, label='Validation loss')
+        ax.legend()
+
+        ax.set_title(f'{self.loss_function} loss during training')
+        ax.set_xlabel('Epochs')
+        ax.set_ylabel('Loss')
+
+        plt.show()
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predicts the output label of a given input sample.
