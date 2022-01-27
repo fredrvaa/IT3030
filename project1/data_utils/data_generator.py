@@ -26,10 +26,10 @@ class DataGenerator:
                  n_samples: int = 1000,
                  image_dim: int = 50,
                  noise_level: float = 0.0,
-                 shape_ratio_range: tuple(float) = (0.1, 1.0),
+                 shape_ratio_range: tuple[float] = (0.1, 1.0),
                  split_ratios: list[float] = [0.7, 0.2, 0.1],
                  centered: bool = False,
-                 onehot: bool = True):
+                 ):
         """
         :param n_samples: Number of samples that should be generated.
         :param image_dim: Dimensions of the square image generated. E.g. 50x50 image.
@@ -37,7 +37,6 @@ class DataGenerator:
         :param shape_ratio_range: Range for how large the shape can be relative to the whole image.
         :param split_ratios: Split used for train, val, and test set.
         :param centered: If set to True, the shape is centered in the image.
-        :param onehot: If set to True, the labels returned in the datasets are onehot encoded.
         """
 
         self._image_dim = image_dim
@@ -45,7 +44,6 @@ class DataGenerator:
         self._shape_ratio_range = shape_ratio_range
         self._split = self._get_split(n_samples, split_ratios)
         self._centered = centered
-        self._onehot = onehot
 
     def _get_split(self, n_samples: int, split_ratios: list[float]) -> list[int]:
         """ Converts a list of split ratios to a list of samples in each split.
@@ -126,7 +124,6 @@ class DataGenerator:
         :return: The generated image in the form of a numpy array.
         """
 
-        # Initialize image
         image = np.zeros((self._image_dim, self._image_dim))
 
         self._place_shape(image, shape)
@@ -134,19 +131,6 @@ class DataGenerator:
 
         return image
 
-    def _onehot_encode_label(self, label: int) -> np.ndarray:
-        """One hot encodes an integer label.
-
-        The one hot encoded list that is returned is the length of the Shapes enum where one element is set to 1
-        and the rest is set to 0.
-
-        :param label: Integer label to be one hot encoded.
-        :return: The onehot encoded label in the form of a numpy array (list).
-        """
-
-        onehot_label = np.zeros(len(Shapes))
-        onehot_label[label] = 1
-        return onehot_label
 
     def populate_dataset(self, dataset: Dataset) -> None:
         """Populates an existing dataset with generated images.
@@ -158,14 +142,14 @@ class DataGenerator:
         """
 
         # Loop through partitions (train, val, test)
-        for i, field in enumerate(fields(Dataset)):
-            partition = getattr(dataset, field.name)
+        for i, partition_name in enumerate(['train', 'val', 'test']):
+            partition = getattr(dataset, partition_name)
 
             # Append images to partition
             for n in range(self._split[i]):
                 shape = Shapes(n % len(Shapes))
                 generated_image = self._generate_image(shape=shape)
-                label = self._onehot_encode_label(shape.value) if self._onehot else shape.value
+                label = shape.value
                 datapoint = DataPoint(generated_image, label)
                 partition.append(datapoint)
 
@@ -175,27 +159,12 @@ class DataGenerator:
         This can be used if no existing dataset exists.
         """
 
-        dataset = Dataset()
+        dataset = Dataset(labels=Shapes)
         self.populate_dataset(dataset)
         dataset.shuffle_partitions()
         return dataset
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    dataset = DataGenerator(image_dim=50, noise_level=0, shape_ratio_range=[0.5, 0.5], n_samples=100).generate_dataset()
-
-    # Plot first 25 samples of train set
-    n = 5
-    fig, axs = plt.subplots(n, n, figsize=(9, 9))
-    for i in range(n):
-        for j in range(n):
-            image = dataset.train[i * n + j].image
-            label = dataset.train[i * n + j].label
-            axs[i][j].title.set_text(Shapes(label).name)
-            axs[i][j].set_xticks([])
-            axs[i][j].set_yticks([])
-            axs[i][j].imshow(image)
-
-    plt.show()
+    dataset = DataGenerator(image_dim=20, noise_level=0, shape_ratio_range=[0.5, 0.5], n_samples=100).generate_dataset()
+    dataset.visualize_data('train')
