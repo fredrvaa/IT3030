@@ -18,7 +18,8 @@ class Network:
                  learning_rate: float = 0.001,
                  batch_size: int = 32,
                  wreg: float = 0.01,
-                 wrt: Regularization = None
+                 wrt: Regularization = None,
+                 verbose: bool = False,
                  ):
         """
         :param loss_function: The loss function used at the output of the network.
@@ -35,9 +36,14 @@ class Network:
         self.wreg: float = wreg
         self.wrt: Regularization = wrt()
 
-        self.training_loss = []
-        self.validation_loss = []
-    
+        self.verbose = verbose
+
+        self.train_loss = []
+        self.val_loss = []
+        self.train_accuracy = []
+        self.val_accuracy = []
+
+
     def _forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Propagates a single input sample through the whole network (input-, hidden-, and output layers).
 
@@ -91,66 +97,100 @@ class Network:
             ) -> None:
         """Fits the parameters of the network to the training data.
 
+        After fitting/training, loss and accuracy can be visualized using
+        visualize_loss() and visualize_accuracy() respectively.
+
         :param X_train: The training data.
         :param y_train: The labels corresponding to the training data
         :param epochs: Number of times the whole training set is passed through the network.
         """
 
-        self.training_loss = []
-        self.validation_loss = []
+        self.train_loss = []
+        self.val_loss = []
+        self.train_accuracy = []
+        self.val_accuracy = []
 
         print('Fitting model to data...')
         for epoch in range(epochs):
             print(f'Epoch {epoch}')
 
             # Train
-            aggregated_training_loss = 0
+            aggregated_train_loss: int = 0
+            num_train_correct: int = 0
             for i, (X, y) in enumerate(zip(X_train, y_train)):
                 y_hat = self._forward_pass(X)
-                aggregated_training_loss += self.loss_function(y_hat, y)
+                aggregated_train_loss += self.loss_function(y_hat, y)
 
+                # Create prediction and check if correct
+                prediction = np.zeros(y_hat.shape)
+                prediction[np.argmax(y_hat)] = 1
+                if np.array_equal(prediction, y):
+                    num_train_correct += 1
+
+                # Perform backprop by propagating the jacobian of the loss with respect to the (softmax) output
+                # through the network.
                 J_L_S = self.loss_function.gradient(y_hat, y)
                 self._backward_pass(J_L_S)
 
+
+                # If batch size has been processed, update weights
                 if (epoch*len(X_train) + i + 1) % self.batch_size == 0:
                     self._update_parameters()
 
-            mean_training_loss = aggregated_training_loss / (i + 1)
+            # Record train loss and accuracy
+            train_loss = aggregated_train_loss / (i + 1)
+            train_accuracy = num_train_correct / (i + 1)
+            self.train_loss.append([epoch, train_loss])
+            self.train_accuracy.append([epoch, train_accuracy])
 
-            print('Train loss: ', mean_training_loss)
-            self.training_loss.append([epoch, mean_training_loss])
+            if self.verbose:
+                print('Train Loss: ', train_loss)
+                print('Train Accuracy: ', train_accuracy)
 
             # Validation
             if X_val is not None and y_val is not None:
-                aggregated_val_loss = 0
+                aggregated_val_loss: int = 0
+                num_val_correct: int = 0
                 for i, (X, y) in enumerate(zip(X_val, y_val)):
                     y_hat = self._forward_pass(X)
                     aggregated_val_loss += self.loss_function(y_hat, y)
 
-                mean_val_loss = aggregated_training_loss / (i + 1)
+                    # Create prediction and check if correct
+                    prediction = np.zeros(y_hat.shape)
+                    prediction[np.argmax(y_hat)] = 1
+                    if np.array_equal(prediction, y):
+                        num_val_correct += 1
+
+                # Record val loss and accuracy
+                val_loss = aggregated_val_loss / (i + 1)
+                val_accuracy = num_val_correct / (i + 1)
+                self.val_loss.append([epoch, val_loss])
+                self.val_accuracy.append([epoch, val_accuracy])
+
+                if self.verbose:
+                    print('Validation Loss: ', val_loss)
+                    print('Validation Accuracy: ', val_accuracy)
 
 
-                print('Validation loss: ', mean_val_loss)
-                self.validation_loss.append([epoch, mean_val_loss])
+        # Convert to numpy arrays
+        self.train_loss = np.array(self.train_loss)
+        self.val_loss = np.array(self.val_loss)
+        self.train_accuracy = np.array(self.train_accuracy)
+        self.val_accuracy = np.array(self.val_accuracy)
 
-
-        self.training_loss = np.array(self.training_loss)
-        self.validation_loss = np.array(self.validation_loss)
-
-    def visualize_fit(self) -> None:
+    def visualize_loss(self) -> None:
         """Visualizes training and validation loss recorded during the previous fit of the network."""
         fig, ax = plt.subplots(figsize=(12, 12))
 
         # Plot train loss
-        train_x = self.training_loss[:, 0]
-        train_y = self.training_loss[:, 1]
-        ax.plot(train_x, train_y, label='Training loss')
+        train_x = self.train_loss[:, 0]
+        train_y = self.train_loss[:, 1]
+        ax.plot(train_x, train_y, label='Train loss')
 
         # Plot val loss if it has been recorded
-        if self.training_loss.shape[0] > 0:
-            print(self.validation_loss)
-            val_x = self.validation_loss[:, 0]
-            val_y = self.validation_loss[:, 1]
+        if self.val_loss.shape[0] > 0:
+            val_x = self.val_loss[:, 0]
+            val_y = self.val_loss[:, 1]
             ax.plot(val_x, val_y, label='Validation loss')
 
         ax.legend()
@@ -158,6 +198,29 @@ class Network:
         ax.set_title(f'{self.loss_function} loss during training')
         ax.set_xlabel('Epochs')
         ax.set_ylabel('Loss')
+
+        plt.show()
+
+    def visualize_accuracy(self) -> None:
+        """Visualizes training and validation accuracy recorded during the previous fit of the network."""
+        fig, ax = plt.subplots(figsize=(12, 12))
+
+        # Plot train loss
+        train_x = self.train_accuracy[:, 0]
+        train_y = self.train_accuracy[:, 1]
+        ax.plot(train_x, train_y, label='Train Accuracy')
+
+        # Plot val loss if it has been recorded
+        if self.val_accuracy.shape[0] > 0:
+            val_x = self.val_accuracy[:, 0]
+            val_y = self.val_accuracy[:, 1]
+            ax.plot(val_x, val_y, label='Validation Accuracy')
+
+        ax.legend()
+
+        ax.set_title(f'Accuracy during training')
+        ax.set_xlabel('Epochs')
+        ax.set_ylabel('Accuracy[\%]')
 
         plt.show()
 
