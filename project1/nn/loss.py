@@ -71,10 +71,10 @@ class CrossEntropy(Loss):
         :return: The cross entropy loss between y_hat and y
         """
 
-        #y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
-        return - np.sum(y * np.log(y_hat))
+        y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
+        return - np.mean(y * np.log(y_hat))
 
-    def gradient(self, y_hat, y, epsilon=1e-15) -> np.ndarray:
+    def gradient(self, y_hat, y, epsilon=1e-7) -> np.ndarray:
         """Calculates the gradient of the cross entropy loss function with respect to y_hat.
 
         :param y_hat: The predicted output tensor.
@@ -82,8 +82,8 @@ class CrossEntropy(Loss):
         :param epsilon: A small term used to clip y_hat such that we don't divide by 0.
         :return: The calculated gradient of the cross entropy loss between y_hat and y
         """
-        #y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
-        return - (y / y_hat)#y_hat.shape[0]
+        y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
+        return - (y / y_hat) / y_hat.shape[0]
 
 
 if __name__ == '__main__':

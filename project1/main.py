@@ -11,11 +11,11 @@ network: Network = NetworkGenerator("config.yaml").generate_network()
 print(network)
 
 # Generate dataset
-dataset: Dataset = DataGenerator(n_samples=1000, noise_level=0, image_dim=10).generate_dataset()
+dataset: Dataset = DataGenerator(n_samples=1000, noise_level=0, image_dim=50).generate_dataset()
 (X_train, y_train), (X_val, y_val), (X_test, y_test) = dataset.load_data(flatten=True)
 
 # Train network
-network.fit(X_train, y_train, epochs=10)
+network.fit(X_train, y_train, X_val, y_val, epochs=10)
 
 network.visualize_fit()
 

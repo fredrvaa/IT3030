@@ -82,7 +82,13 @@ class Network:
 
         self.layers.append(layer)
 
-    def fit(self, X_train: np.ndarray, y_train: np.ndarray, epochs: int = 1) -> None:
+    def fit(self,
+            X_train: np.ndarray,
+            y_train: np.ndarray,
+            X_val: np.ndarray = None,
+            y_val: np.ndarray = None,
+            epochs: int = 1
+            ) -> None:
         """Fits the parameters of the network to the training data.
 
         :param X_train: The training data.
@@ -96,19 +102,37 @@ class Network:
         print('Fitting model to data...')
         for epoch in range(epochs):
             print(f'Epoch {epoch}')
-            aggregated_training_loss = 0
-            for i, X in enumerate(X_train):
-                y_hat = self._forward_pass(X)
-                #print(y_hat)
-                aggregated_training_loss += self.loss_function(y_hat, y_train[i])
 
-                J_L_S = self.loss_function.gradient(y_hat, y_train[i])
+            # Train
+            aggregated_training_loss = 0
+            for i, (X, y) in enumerate(zip(X_train, y_train)):
+                y_hat = self._forward_pass(X)
+                aggregated_training_loss += self.loss_function(y_hat, y)
+
+                J_L_S = self.loss_function.gradient(y_hat, y)
                 self._backward_pass(J_L_S)
 
                 if (epoch*len(X_train) + i + 1) % self.batch_size == 0:
                     self._update_parameters()
+
             mean_training_loss = aggregated_training_loss / (i + 1)
+
+            print('Train loss: ', mean_training_loss)
             self.training_loss.append([epoch, mean_training_loss])
+
+            # Validation
+            if X_val is not None and y_val is not None:
+                aggregated_val_loss = 0
+                for i, (X, y) in enumerate(zip(X_val, y_val)):
+                    y_hat = self._forward_pass(X)
+                    aggregated_val_loss += self.loss_function(y_hat, y)
+
+                mean_val_loss = aggregated_training_loss / (i + 1)
+
+
+                print('Validation loss: ', mean_val_loss)
+                self.validation_loss.append([epoch, mean_val_loss])
+
 
         self.training_loss = np.array(self.training_loss)
         self.validation_loss = np.array(self.validation_loss)
@@ -116,13 +140,19 @@ class Network:
     def visualize_fit(self) -> None:
         """Visualizes training and validation loss recorded during the previous fit of the network."""
         fig, ax = plt.subplots(figsize=(12, 12))
+
+        # Plot train loss
         train_x = self.training_loss[:, 0]
         train_y = self.training_loss[:, 1]
-        #val_x = self.validation_loss[:, 0]
-        #val_y = self.validation_loss[:, 1]
-
         ax.plot(train_x, train_y, label='Training loss')
-        #ax.plot(val_x, val_y, label='Validation loss')
+
+        # Plot val loss if it has been recorded
+        if self.training_loss.shape[0] > 0:
+            print(self.validation_loss)
+            val_x = self.validation_loss[:, 0]
+            val_y = self.validation_loss[:, 1]
+            ax.plot(val_x, val_y, label='Validation loss')
+
         ax.legend()
 
         ax.set_title(f'{self.loss_function} loss during training')
