@@ -1,3 +1,5 @@
+import pickle
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -34,7 +36,7 @@ class Network:
         self.learning_rate: int = learning_rate
         self.batch_size: int = batch_size
         self.wreg: float = wreg
-        self.wrt: Regularization = wrt()
+        self.wrt: Regularization = wrt() if wrt is not None else None
 
         self.verbose = verbose
 
@@ -178,6 +180,18 @@ class Network:
         self.train_accuracy = np.array(self.train_accuracy)
         self.val_accuracy = np.array(self.val_accuracy)
 
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predicts the output label of a given input sample.
+
+        :param X: The input tensor (sample).
+        :return: The predicted output label.
+        """
+
+        y_hat = self._forward_pass(X)
+        prediction = np.zeros(y_hat.shape)
+        prediction[np.argmax(y_hat)] = 1
+        return prediction
+
     def visualize_loss(self) -> None:
         """Visualizes training and validation loss recorded during the previous fit of the network."""
         fig, ax = plt.subplots(figsize=(12, 12))
@@ -224,17 +238,26 @@ class Network:
 
         plt.show()
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """Predicts the output label of a given input sample.
+    def save(self, file_name: str) -> None:
+        """Saves the Network object to a file.
 
-        :param X: The input tensor (sample).
-        :return: The predicted output label.
+        :param file_name: File name of where to save model. Expects that folder where file should be created exists.
         """
 
-        y_hat = self._forward_pass(X)
-        prediction = np.zeros(y_hat.shape)
-        prediction[np.argmax(y_hat)] = 1
-        return prediction
+        with open(file_name, 'wb') as file:
+            pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def load(cls, file_name: str) -> 'Network':
+        """Loads a Network object from a file.
+
+        :param file_name: File name of saved network.
+        :return: A Network object as specified by the file.
+        """
+
+        with open(file_name, 'rb') as file:
+            network = pickle.load(file)
+        return network
 
     def __str__(self):
         """Prints all layers and hyperparameters of the network."""
@@ -248,3 +271,15 @@ class Network:
         out += f'Learning rate: \t {self.learning_rate}\n'
 
         return out
+
+if __name__ == '__main__':
+    import os
+
+    # Test save and load
+    file_name = 'test_save_load.pkl'
+    network: Network = Network(batch_size=999)
+    network.save(file_name)
+    loaded_network: Network = Network.load(file_name)
+    assert (loaded_network.batch_size == 999)
+    print('Correctly saved and loaded network.')
+    os.remove(file_name)
