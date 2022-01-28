@@ -73,30 +73,58 @@ class HiddenLayer(Layer):
                  learning_rate: float = 0.01,
                  activation: Activation = Relu,
                  weight_range: tuple[float] = (-0.1, 0.1),
-                 bias_range: tuple[float] = (0, 0)
+                 bias_range: tuple[float] = (0, 0),
+                 init_scheme: str = 'glorot_uniform',
                  ):
         """
         :param input_size: Size of the input to the layer.
         :param output_size: Size of the output of the layer.
         :param learning_rate: Term used to weigh how much of the gradients are added when updating parameters.
         :param activation: The activation function used at the output of the layer.
-        :param weight_range: Interval for the random initialization of weights.
+        :param weight_range: Interval for the random initialization of weights. Only used if init_scheme is 'uniform'.
         :param bias_range: Interval for the random initialization of biases.
+        :param init_scheme: Weight initialization scheme. Can be 'glorot_uniform', 'glorot_normal', 'uniform'.
         """
 
+        # Sizes
+        self._input_size = input_size
+        self._output_size = output_size
         self.size: int = output_size
 
-        self.W: np.ndarray = np.random.uniform(weight_range[0], weight_range[1], (input_size, output_size))
-        self.b: np.ndarray = np.random.uniform(bias_range[0], bias_range[1], output_size)
+        # Weight and bias initialization
+        self._weight_range = weight_range
+        self._bias_range = bias_range
 
-        self._learning_rate: int = learning_rate
+        self.W: np.ndarray = self._initialize_weights(init_scheme)
+        self.b: np.ndarray = np.random.uniform(bias_range[0], bias_range[1], self._output_size)
+
+        # Hyperparameters
         self._activation: Activation = activation()
+        self._learning_rate: int = learning_rate
 
+        # Storing gradients
         self.W_gradients: list[np.ndarray] = []
         self.b_gradients: list[np.ndarray] = []
 
-        self.input: np.ndarray = None
-        self.output: np.ndarray = None
+        # Storing input/output used in backward_pass()
+        self._input: np.ndarray = None
+        self._output: np.ndarray = None
+
+    def _initialize_weights(self, init_scheme: str) -> np.ndarray:
+        if init_scheme == 'glorot_uniform':
+            sd: float = np.sqrt(6.0 / (self._input_size + self._output_size))
+            return np.random.uniform(-sd, sd, (self._input_size, self._output_size))
+        elif init_scheme == 'glorot_normal':
+            sd: float = np.sqrt(2.0 / (self._input_size + self._output_size))
+            return np.random.normal(0.0, sd, (self._input_size, self._output_size))
+        elif init_scheme == 'uniform':
+            return np.random.uniform(
+                self._weight_range[0],
+                self._weight_range[1],
+                (self._input_size, self._output_size)
+            )
+        else:
+            raise ValueError(f'{init_scheme} is not a supported initialization scheme')
 
     def update_parameters(self) -> None:
         """Updates all weights and biases using the accumulated gradients and clears the gradients."""
@@ -114,11 +142,9 @@ class HiddenLayer(Layer):
         :return: The output activation tensor.
         """
 
-        self.input = X
-        self.output = self._activation(np.dot(X, self.W) + self.b)
-        # if self.size == 5:
-        #     print(self.output)
-        return self.output
+        self._input = X
+        self._output = self._activation(np.dot(X, self.W) + self.b)
+        return self._output
 
     def backward_pass(self, J_L_N: np.ndarray) -> np.ndarray:
         """Computes and returns the jacobian of the loss with respect to the upstream layer M (J_L_M).
@@ -134,9 +160,9 @@ class HiddenLayer(Layer):
         """
 
         # Compute intermediate jacobians
-        J_N_sum = self._activation.gradient(np.diag(self.output))
+        J_N_sum = self._activation.gradient(np.diag(self._output))
         J_N_M = np.dot(J_N_sum, self.W.T)
-        J_N_W_hat = np.outer(self.input, np.diag(J_N_sum))
+        J_N_W_hat = np.outer(self._input, np.diag(J_N_sum))
 
         # Compute final jacobians
         J_L_W = J_L_N * J_N_W_hat
@@ -159,8 +185,8 @@ class SoftmaxLayer(Layer):
     def __init__(self, input_size: int):
         self.size = input_size
 
-        self.input = None
-        self.output = None
+        self._input = None
+        self._output = None
 
     def forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Computes and returns the softmax of the input.
@@ -169,10 +195,10 @@ class SoftmaxLayer(Layer):
         :return: The softmaxed output tensor.
         """
 
-        self.input = X
+        self._input = X
         e = np.exp(X - np.max(X))
-        self.output = e / e.sum()
-        return self.output
+        self._output = e / e.sum()
+        return self._output
 
     def backward_pass(self, J_L_S: np.ndarray) -> np.ndarray:
         """Computes and returns the jacobian of the loss with respect to the last hidden layer M (J_L_M).
@@ -187,14 +213,14 @@ class SoftmaxLayer(Layer):
         :return : The computed jacobian of the loss with respect to the upstream layer (M).
         """
 
-        J_S_M = np.diag(self.output)
+        J_S_M = np.diag(self._output)
 
         for i in range(len(J_S_M)):
             for j in range(len(J_S_M)):
                 if i == j:
-                    J_S_M[i][j] = self.output[i] - self.output[i] ** 2
+                    J_S_M[i][j] = self._output[i] - self._output[i] ** 2
                 else:
-                    J_S_M[i][j] = -self.output[i] * self.output[j]
+                    J_S_M[i][j] = -self._output[i] * self._output[j]
 
         J_L_M = np.dot(J_L_S, J_S_M)
         return J_L_M
