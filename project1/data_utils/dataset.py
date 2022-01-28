@@ -1,10 +1,9 @@
 from enum import Enum
+import itertools
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
-
-import itertools
+from prettytable import PrettyTable
 
 from dataclasses import dataclass, field
 
@@ -167,3 +166,25 @@ class Dataset:
         self._set_ax(ax, data)
 
         plt.show()
+
+    def __str__(self):
+        """Prints partitions and number of labels in each partition."""
+
+        t = PrettyTable(['Labels', 'Train', 'Val', 'Test'], title='Dataset')
+        train_total = 0
+        val_total = 0
+        test_total = 0
+        for label in self.labels:
+            n_train = len([x for x in self.train if x.label == label.value])
+            n_val = len([x for x in self.val if x.label == label.value])
+            n_test = len([x for x in self.test if x.label == label.value])
+            train_total += n_train
+            val_total += n_val
+            test_total += n_test
+
+            t.add_row([label.name, n_train, n_val, n_test])
+
+        t.add_row(['Total', train_total, val_total, test_total])
+
+        return t.get_string()
+

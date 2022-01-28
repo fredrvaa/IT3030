@@ -1,7 +1,8 @@
 import pickle
 
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from prettytable import PrettyTable
 
 from nn.layer import Layer, HiddenLayer
 from nn.loss import Loss, CrossEntropy
@@ -21,7 +22,6 @@ class Network:
                  batch_size: int = 32,
                  wreg: float = 0.01,
                  wrt: Regularization = None,
-                 verbose: bool = False,
                  ):
         """
         :param loss_function: The loss function used at the output of the network.
@@ -37,8 +37,6 @@ class Network:
         self.batch_size: int = batch_size
         self.wreg: float = wreg
         self.wrt: Regularization = wrt() if wrt is not None else None
-
-        self.verbose = verbose
 
         self.train_loss = []
         self.val_loss = []
@@ -95,8 +93,9 @@ class Network:
             y_train: np.ndarray,
             X_val: np.ndarray = None,
             y_val: np.ndarray = None,
-            epochs: int = 1
-            ) -> None:
+            epochs: int = 1,
+            verbose: bool = False,
+        ) -> None:
         """Fits the parameters of the network to the training data.
 
         After fitting/training, loss and accuracy can be visualized using
@@ -105,6 +104,7 @@ class Network:
         :param X_train: The training data.
         :param y_train: The labels corresponding to the training data
         :param epochs: Number of times the whole training set is passed through the network.
+        :param verbose: Prints additional information during fit such as loss and accuracy if set to True.
         """
 
         self.train_loss = []
@@ -127,6 +127,7 @@ class Network:
                 prediction = np.zeros(y_hat.shape)
                 prediction[np.argmax(y_hat)] = 1
                 if np.array_equal(prediction, y):
+                    print(prediction, y)
                     num_train_correct += 1
 
                 # Perform backprop by propagating the jacobian of the loss with respect to the (softmax) output
@@ -145,7 +146,8 @@ class Network:
             self.train_loss.append([epoch, train_loss])
             self.train_accuracy.append([epoch, train_accuracy])
 
-            if self.verbose:
+            if verbose:
+                print(num_train_correct, "/", i+1)
                 print('Train Loss: ', train_loss)
                 print('Train Accuracy: ', train_accuracy)
 
@@ -169,7 +171,7 @@ class Network:
                 self.val_loss.append([epoch, val_loss])
                 self.val_accuracy.append([epoch, val_accuracy])
 
-                if self.verbose:
+                if verbose:
                     print('Validation Loss: ', val_loss)
                     print('Validation Accuracy: ', val_accuracy)
 
@@ -262,15 +264,22 @@ class Network:
     def __str__(self):
         """Prints all layers and hyperparameters of the network."""
 
-        out = '--------Layers--------\n'
+        layer_table = PrettyTable(['Type', 'Size'], title='Layers')
+        layer: Layer
         for layer in self.layers:
-            out += layer.__str__() + '\n'
-        
-        out += '---Hyperparameters---\n'
-        out += f'Loss function: \t {self.loss_function}\n'
-        out += f'Learning rate: \t {self.learning_rate}\n'
+            layer_table.add_row([layer.__class__.__name__, layer.size])
 
-        return out
+        parameter_table = PrettyTable(['Parameter', 'Value'], title='Hyperparameters')
+        parameter_table.add_rows([
+            ['Loss function', self.loss_function],
+            ['Learning rate', self.learning_rate],
+            ['Batch size', self.learning_rate],
+            ['Weight regularization', self.wreg],
+            ['Weight reg. type', self.wrt.__class__.__name__],
+        ])
+
+        return f'{layer_table.get_string()}\n{parameter_table.get_string()}'
+
 
 if __name__ == '__main__':
     import os

@@ -127,14 +127,14 @@ if __name__ == '__main__':
     tanh = Tanh()
 
     print('Linear:', linear(z))
-    print('Linear derivative:', linear.gradient(z))
+    print('Linear gradient:', linear.gradient(z))
 
     print('ReLU:', relu(z))
-    print('ReLU derivative:', relu.gradient(z))
+    print('ReLU gradient:', relu.gradient(z))
 
     print('Sigmoid:', sigmoid(z))
-    print('Sigmoid derivative:', sigmoid.gradient(z))
+    print('Sigmoid gradient:', sigmoid.gradient(z))
 
     print('tanh:', tanh(z))
-    print('tanh derivative:', tanh.gradient(z))
+    print('tanh gradient:', tanh.gradient(z))
 
