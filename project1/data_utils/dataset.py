@@ -121,7 +121,7 @@ class Dataset:
         :param data: The Datapoint to be plotted
         """
 
-        image_dim: int = data[0].image.shape[0] - 1
+        image_dim: int = data.image.shape[0] - 1
         ax.set_title(self.labels(data.label).name)
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -143,11 +143,14 @@ class Dataset:
         grid_size: int = int(np.ceil(np.sqrt(n_samples)))
         fig, axs = plt.subplots(grid_size, grid_size, figsize=(12, 12))
 
-        for data, ax in itertools.zip_longest(random_data, axs.flat):
-            if data is not None:
-                self._set_ax(ax, data)
-            else:
-                ax.remove()
+        if grid_size == 1:
+            self._set_ax(axs, random_data[0])
+        else:
+            for data, ax in itertools.zip_longest(random_data, axs.flat):
+                if data is not None:
+                    self._set_ax(ax, data)
+                else:
+                    ax.remove()
 
         plt.show()
 
@@ -161,7 +164,7 @@ class Dataset:
         partition = getattr(self, partition_name)
         data: DataPoint = partition[idx]
 
-        fig, ax = plt.subplots(figsize=(12,12))
+        fig, ax = plt.subplots(figsize=(12, 12))
 
         self._set_ax(ax, data)
 

@@ -11,19 +11,33 @@ network: Network = NetworkGenerator("config.yaml").generate_network()
 print(network)
 
 # Generate dataset
-dataset: Dataset = DataGenerator(n_samples=1000, noise_level=0, image_dim=10).generate_dataset()
+dataset: Dataset = DataGenerator(
+    n_samples=50,
+    noise_level=0,
+    image_dim=10,
+    centered=True,
+    split_ratios=[0.7, 0.3, 0],
+    shape_ratio_range=(0.1, 0.9)).generate_dataset()
+print(dataset)
+dataset.visualize_data('train', 10)
 (X_train, y_train), (X_val, y_val), (X_test, y_test) = dataset.load_data(flatten=True)
 
 # Train network
-network.fit(X_train, y_train, X_val, y_val, epochs=10)
+
+X_train = np.array([[0,1,0], [1,0,1]])
+y_train = np.array([[1,0], [0,1]])
+
+network.fit(X_train, y_train, X_train, y_train, epochs=1, verbose=True)
 
 network.visualize_loss()
 network.visualize_accuracy()
 
-# # Predict a case
-# idx = np.random.randint(1)
-# y = y_train[idx]
-# y_hat = network.predict(X_train[idx])
+network.save('network.pkl')
+
+# Predict a case
+idx = np.random.randint(1)
+y = y_train[idx]
+y_hat = network.predict(X_train[idx])
 
 
 

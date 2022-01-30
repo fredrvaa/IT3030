@@ -119,22 +119,24 @@ class Tanh(Activation):
 
 if __name__ == '__main__':
     # Small test suite
-    z = np.array([-1, -0.5, 0, 0.5, 1])
+    z = np.array([-1, -0.5, 0, 0.001, 0.5, 1])
 
     linear = Linear()
     relu = Relu()
     sigmoid = Sigmoid()
     tanh = Tanh()
 
-    print('Linear:', linear(z))
-    print('Linear gradient:', linear.gradient(z))
+    print('Input: ', z)
+    print('------------')
+    print('Linear: ', linear(z))
+    print('Linear gradient: ', linear.gradient(z))
 
-    print('ReLU:', relu(z))
-    print('ReLU gradient:', relu.gradient(z))
+    print('ReLU: ', relu(z))
+    print('ReLU gradient: ', relu.gradient(z))
 
-    print('Sigmoid:', sigmoid(z))
-    print('Sigmoid gradient:', sigmoid.gradient(z))
+    print('Sigmoid: ', sigmoid(z))
+    print('Sigmoid gradient: ', sigmoid.gradient(z))
 
-    print('tanh:', tanh(z))
-    print('tanh gradient:', tanh.gradient(z))
+    print('tanh: ', tanh(z))
+    print('tanh gradient: ', tanh.gradient(z))
 

@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from nn.activation import Activation, Relu
+from nn.regularization import Regularization
 
 
 class Layer(ABC):
@@ -75,6 +76,9 @@ class HiddenLayer(Layer):
                  weight_range: tuple[float] = (-0.1, 0.1),
                  bias_range: tuple[float] = (0, 0),
                  init_scheme: str = 'glorot_uniform',
+                 wreg: float = 0.01,
+                 wrt: Regularization = None,
+                 **kwargs,
                  ):
         """
         :param input_size: Size of the input to the layer.
@@ -101,6 +105,8 @@ class HiddenLayer(Layer):
         # Hyperparameters
         self._activation: Activation = activation()
         self._learning_rate: int = learning_rate
+        self._wreg: float = wreg
+        self._wrt: Regularization = wrt() if wrt is not None else None
 
         # Storing gradients
         self.W_gradients: list[np.ndarray] = []
@@ -128,10 +134,12 @@ class HiddenLayer(Layer):
 
     def update_parameters(self) -> None:
         """Updates all weights and biases using the accumulated gradients and clears the gradients."""
+        if self._wrt is not None:
+            self.W += self._learning_rate * self._wreg * self._wrt.gradient(self.W)
 
-        self.W -= self._learning_rate * np.mean(self.W_gradients, axis=0)
+        self.W -= self._learning_rate * np.sum(self.W_gradients, axis=0)
         self.W_gradients = []
-        self.b -= self._learning_rate * np.mean(self.b_gradients, axis=0)
+        self.b -= self._learning_rate * np.sum(self.b_gradients, axis=0)
         self.b_gradients = []
 
     def forward_pass(self, X: np.ndarray) -> np.ndarray:
@@ -166,6 +174,8 @@ class HiddenLayer(Layer):
 
         # Compute final jacobians
         J_L_W = J_L_N * J_N_W_hat
+        # if self.size == 5:
+        #     print(J_N_sum)
         J_L_b = np.diag(J_N_sum)
         J_L_M = np.dot(J_L_N, J_N_M)
 
@@ -218,7 +228,7 @@ class SoftmaxLayer(Layer):
         for i in range(len(J_S_M)):
             for j in range(len(J_S_M)):
                 if i == j:
-                    J_S_M[i][j] = self._output[i] - self._output[i] ** 2
+                    J_S_M[i][j] = self._output[i] * (1 - self._output[i])
                 else:
                     J_S_M[i][j] = -self._output[i] * self._output[j]
 
@@ -228,7 +238,7 @@ class SoftmaxLayer(Layer):
 
 if __name__ == '__main__':
     # Small test suite
-    X = [0.1, 0.2, 0.3]
+    X = [3.0, 1.0, 0.2]
     i = InputLayer(3)
     h1 = HiddenLayer(3, 3)
     h2 = HiddenLayer(3, 2)
@@ -237,3 +247,6 @@ if __name__ == '__main__':
     output = o.forward_pass(h2.forward_pass(h1.forward_pass(i.forward_pass(X))))
 
     print("Output of toy network:", output)
+
+    s = SoftmaxLayer(3)
+    print("Output of softmax:", s.forward_pass(X))

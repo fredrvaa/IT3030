@@ -11,8 +11,10 @@ class Shapes(Enum):
     square = 0
     filled_square = 1
     cross = 2
-    horizontal_line = 3
-    vertical_line = 4
+    circle = 3
+    filled_circle = 4
+    # horizontal_line = 3
+    # vertical_line = 4
 
 
 class DataGenerator:
@@ -68,8 +70,9 @@ class DataGenerator:
         high = round(self._shape_ratio_range[1] * self._image_dim)
         shape_size = np.random.randint(low, high) if low != high else high
 
-        # Force shape_size to be at least 5 to make distinct shapes
-        if shape_size < 5: shape_size = 5
+        # Force shape_size to be at least 7 to make distinct shapes (needed for circle)
+        if shape_size < 7:
+            shape_size = 7
 
         # Select bounding box for shape to be in
         if self._image_dim == shape_size:
@@ -100,10 +103,31 @@ class DataGenerator:
                 x2 -= 1
             image[y1:y2 + 1, round(np.mean([x1, x2]))] = 1  # Vertical line
             image[round(np.mean([y1, y2])), x1:x2 + 1] = 1  # Horizontal line
-        elif shape == Shapes.vertical_line:
-            image[y1:y2 + 1, round(np.mean([x1, x2]))] = 1
-        elif shape == Shapes.horizontal_line:
-            image[round(np.mean([y1, y2])), x1:x2 + 1] = 1
+        # elif shape == Shapes.vertical_line:
+        #     image[y1:y2 + 1, round(np.mean([x1, x2]))] = 1
+        # elif shape == Shapes.horizontal_line:
+        #     image[round(np.mean([y1, y2])), x1:x2 + 1] = 1
+        elif shape == Shapes.circle:
+            self._generate_circle(image[y1:y2, x1:x2], filled=False)
+        elif shape == Shapes.filled_circle:
+            self._generate_circle(image[y1:y2, x1:x2], filled=True)
+
+    def _generate_circle(self, bounding_box: np.ndarray, filled: bool) -> None:
+        """Utility function for generating circle in bounding box.
+
+        :param bounding_box: Bounding box to fill.
+        :param filled: Whether or not the circle should be filled
+        """
+
+        radius = bounding_box.shape[0] // 2 - 1
+        a = np.arange(-radius, radius + 1) ** 2
+        dists = np.sqrt(a[:, None] + a)
+
+        if filled:
+            b = (dists - radius < 0.5).astype(int)
+        else:
+            b = (np.abs(dists - radius) < 0.5).astype(int)
+        bounding_box[:b.shape[0], :b.shape[1]] = b
 
     def _apply_noise(self, image: np.ndarray):
         """Adds noise to the image.
@@ -146,7 +170,7 @@ class DataGenerator:
 
             # Append images to partition
             for n in range(self._split[i]):
-                shape = Shapes(n % len(Shapes))
+                shape = np.random.choice([Shapes.filled_square, Shapes.circle])#Shapes(n % len(Shapes))
                 generated_image = self._generate_image(shape=shape)
                 label = shape.value
                 datapoint = DataPoint(generated_image, label)
@@ -161,9 +185,16 @@ class DataGenerator:
         dataset = Dataset(labels=Shapes)
         self.populate_dataset(dataset)
         dataset.shuffle_partitions()
+        dataset.shuffle_partitions()
         return dataset
 
 
 if __name__ == '__main__':
-    dataset = DataGenerator(image_dim=20, noise_level=0, shape_ratio_range=[0.5, 0.5], n_samples=100).generate_dataset()
-    dataset.visualize_data('train')
+    dataset = DataGenerator(
+        image_dim=20,
+        noise_level=0,
+        #shape_ratio_range=[0.5, 0.5],
+        split_ratios=[1, 0, 0],
+        n_samples=len(Shapes)
+    ).generate_dataset()
+    dataset.visualize_data('train', n_samples=len(Shapes))

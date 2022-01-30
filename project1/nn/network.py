@@ -66,6 +66,11 @@ class Network:
         J_L_N = J_L_S
         for layer in self.layers[::-1]:
             J_L_N = layer.backward_pass(J_L_N)
+        #     print(layer.__class__.__name__, layer.size)
+        #     print('J_L_N', J_L_N.shape)
+        #     if type(layer) == HiddenLayer:
+        #         print(layer.W_gradients)
+        # exit()
 
     def _update_parameters(self) -> None:
         """Updates the parameters in all hidden layers (only layers with parameters) of the network."""
@@ -107,32 +112,38 @@ class Network:
         :param verbose: Prints additional information during fit such as loss and accuracy if set to True.
         """
 
+        is_validating = X_val is not None and y_val is not None
+
         self.train_loss = []
-        self.val_loss = []
         self.train_accuracy = []
+
+        self.val_loss = []
         self.val_accuracy = []
 
         print('Fitting model to data...')
         for epoch in range(epochs):
-            print(f'Epoch {epoch}')
-
             # Train
             aggregated_train_loss: int = 0
             num_train_correct: int = 0
             for i, (X, y) in enumerate(zip(X_train, y_train)):
                 y_hat = self._forward_pass(X)
+
                 aggregated_train_loss += self.loss_function(y_hat, y)
+                if self.wrt is not None:
+                    for layer in self.layers:
+                        if type(layer) == HiddenLayer:
+                            aggregated_train_loss += self.wreg * self.wrt(layer.W)
 
                 # Create prediction and check if correct
                 prediction = np.zeros(y_hat.shape)
                 prediction[np.argmax(y_hat)] = 1
                 if np.array_equal(prediction, y):
-                    print(prediction, y)
                     num_train_correct += 1
 
                 # Perform backprop by propagating the jacobian of the loss with respect to the (softmax) output
                 # through the network.
                 J_L_S = self.loss_function.gradient(y_hat, y)
+                #print('y_hat, y:', y_hat, y)
                 self._backward_pass(J_L_S)
 
 
@@ -146,24 +157,28 @@ class Network:
             self.train_loss.append([epoch, train_loss])
             self.train_accuracy.append([epoch, train_accuracy])
 
-            if verbose:
-                print(num_train_correct, "/", i+1)
-                print('Train Loss: ', train_loss)
-                print('Train Accuracy: ', train_accuracy)
+            val_loss = None
+            val_accuracy = None
 
             # Validation
-            if X_val is not None and y_val is not None:
+            if is_validating:
+                val_correct = {x: 0 for x in range(len(y_val[0]))}
                 aggregated_val_loss: int = 0
                 num_val_correct: int = 0
                 for i, (X, y) in enumerate(zip(X_val, y_val)):
                     y_hat = self._forward_pass(X)
                     aggregated_val_loss += self.loss_function(y_hat, y)
+                    if self.wrt is not None:
+                        for layer in self.layers:
+                            if type(layer) == HiddenLayer:
+                                aggregated_val_loss += self.wreg * self.wrt(layer.W)
 
                     # Create prediction and check if correct
                     prediction = np.zeros(y_hat.shape)
                     prediction[np.argmax(y_hat)] = 1
                     if np.array_equal(prediction, y):
                         num_val_correct += 1
+                        val_correct[np.argmax(y_hat)] += 1
 
                 # Record val loss and accuracy
                 val_loss = aggregated_val_loss / (i + 1)
@@ -171,9 +186,28 @@ class Network:
                 self.val_loss.append([epoch, val_loss])
                 self.val_accuracy.append([epoch, val_accuracy])
 
-                if verbose:
-                    print('Validation Loss: ', val_loss)
-                    print('Validation Accuracy: ', val_accuracy)
+            print(f'Finished epoch {epoch}')
+            if verbose:
+                loss_table = PrettyTable(['Dataset', 'Loss'], title=f'Loss')
+                loss_table.add_row(['Train', round(train_loss, 2)])
+
+                accuracy_table = PrettyTable(['Dataset', 'Accuracy'], title=f'Accuracy')
+                accuracy_table.add_row(['Train Accuracy', f'{round(train_accuracy * 100, 2)}%'])
+
+                classification_table = ''
+                if is_validating:
+                    loss_table.add_row(['Val', round(val_loss, 2)])
+                    accuracy_table.add_row(['Val', f'{round(val_accuracy * 100, 2)}%'])
+                    classification_table = PrettyTable(['Class', 'Num Correct'], title='Validation Classification')
+                    total = 0
+                    for key, value in val_correct.items():
+                        classification_table.add_row([key, value])
+                        total += value
+                    classification_table.add_row(['Total', total])
+
+
+                print(f'{loss_table}\n{accuracy_table}\n{classification_table}')
+
 
 
         # Convert to numpy arrays
