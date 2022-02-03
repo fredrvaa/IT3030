@@ -49,7 +49,6 @@ class InputLayer(Layer):
         :param X: The input tensor.
         :return: The input tensor.
         """
-
         return X
 
     def backward_pass(self, J_L_N: np.ndarray) -> np.ndarray:
@@ -174,9 +173,7 @@ class HiddenLayer(Layer):
 
         # Compute final jacobians
         J_L_W = J_L_N * J_N_W_hat
-        # if self.size == 5:
-        #     print(J_N_sum)
-        J_L_b = np.diag(J_N_sum)
+        J_L_b = J_L_N
         J_L_M = np.dot(J_L_N, J_N_M)
 
         # Store J_L_W and J_L_b for future parameter update
@@ -228,7 +225,7 @@ class SoftmaxLayer(Layer):
         for i in range(len(J_S_M)):
             for j in range(len(J_S_M)):
                 if i == j:
-                    J_S_M[i][j] = self._output[i] * (1 - self._output[i])
+                    J_S_M[i][j] = self._output[i] * (1 - self._output[j])
                 else:
                     J_S_M[i][j] = -self._output[i] * self._output[j]
 
@@ -248,5 +245,5 @@ if __name__ == '__main__':
 
     print("Output of toy network:", output)
 
-    s = SoftmaxLayer(3)
-    print("Output of softmax:", s.forward_pass(X))
+    s = SoftmaxLayer(2)
+    print("Output of softmax:", s.forward_pass(np.array([0.41643299, 0.])))  # -> [0.60262938 0.39737062]

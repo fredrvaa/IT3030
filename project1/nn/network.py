@@ -43,7 +43,6 @@ class Network:
         self.train_accuracy = []
         self.val_accuracy = []
 
-
     def _forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Propagates a single input sample through the whole network (input-, hidden-, and output layers).
 
@@ -54,7 +53,6 @@ class Network:
         output = X
         for layer in self.layers:
             output = layer.forward_pass(output)
-
         return output
 
     def _backward_pass(self, J_L_S: np.ndarray) -> None:
@@ -62,25 +60,16 @@ class Network:
 
         :param J_L_S: The gradient with respect to output.
         """
-
         J_L_N = J_L_S
         for layer in self.layers[::-1]:
             J_L_N = layer.backward_pass(J_L_N)
-        #     print(layer.__class__.__name__, layer.size)
-        #     print('J_L_N', J_L_N.shape)
-        #     if type(layer) == HiddenLayer:
-        #         print(layer.W_gradients)
-        # exit()
 
     def _update_parameters(self) -> None:
         """Updates the parameters in all hidden layers (only layers with parameters) of the network."""
 
         layer: HiddenLayer
         for layer in [layer for layer in self.layers if type(layer) == HiddenLayer]:
-            # if layer.size == 5:
-            #     print("W", layer.W, '\ndW', np.mean(layer.W_gradients, axis=0))
             layer.update_parameters()
-
 
     def add_layer(self, layer: Layer) -> None:
         """Appends a layer to the network.
@@ -100,7 +89,7 @@ class Network:
             y_val: np.ndarray = None,
             epochs: int = 1,
             verbose: bool = False,
-        ) -> None:
+            ) -> None:
         """Fits the parameters of the network to the training data.
 
         After fitting/training, loss and accuracy can be visualized using
@@ -143,9 +132,7 @@ class Network:
                 # Perform backprop by propagating the jacobian of the loss with respect to the (softmax) output
                 # through the network.
                 J_L_S = self.loss_function.gradient(y_hat, y)
-                #print('y_hat, y:', y_hat, y)
                 self._backward_pass(J_L_S)
-
 
                 # If batch size has been processed, update weights
                 if (epoch*len(X_train) + i + 1) % self.batch_size == 0:
@@ -205,10 +192,7 @@ class Network:
                         total += value
                     classification_table.add_row(['Total', total])
 
-
                 print(f'{loss_table}\n{accuracy_table}\n{classification_table}')
-
-
 
         # Convert to numpy arrays
         self.train_loss = np.array(self.train_loss)
@@ -283,8 +267,8 @@ class Network:
         with open(file_name, 'wb') as file:
             pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
 
-    @classmethod
-    def load(cls, file_name: str) -> 'Network':
+    @staticmethod
+    def load(file_name: str) -> 'Network':
         """Loads a Network object from a file.
 
         :param file_name: File name of saved network.

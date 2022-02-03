@@ -170,7 +170,7 @@ class DataGenerator:
 
             # Append images to partition
             for n in range(self._split[i]):
-                shape = np.random.choice([Shapes.filled_square, Shapes.circle])#Shapes(n % len(Shapes))
+                shape = Shapes(n % len(Shapes))
                 generated_image = self._generate_image(shape=shape)
                 label = shape.value
                 datapoint = DataPoint(generated_image, label)

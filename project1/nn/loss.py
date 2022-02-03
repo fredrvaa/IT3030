@@ -62,7 +62,7 @@ class MSE(Loss):
 class CrossEntropy(Loss):
     """Class implementing the cross entropy loss function."""
 
-    def __call__(self,  y_hat: np.ndarray, y: np.ndarray, epsilon=1e-7) -> float:
+    def __call__(self,  y_hat: np.ndarray, y: np.ndarray, epsilon=1e-12) -> float:
         """Calculates the loss using the cross entropy loss function.
 
         :param y_hat: The predicted output tensor.
@@ -70,10 +70,10 @@ class CrossEntropy(Loss):
         :param epsilon: A small term used to clip y_hat such that we don't take log(0).
         :return: The cross entropy loss between y_hat and y
         """
-        y_hat = np.clip(y_hat, epsilon, 1. - epsilon)
+        y_hat = y_hat.clip(min=epsilon)
         return - np.sum(y * np.log(y_hat))
 
-    def gradient(self, y_hat: np.ndarray, y: np.ndarray, epsilon=1e-7) -> np.ndarray:
+    def gradient(self, y_hat: np.ndarray, y: np.ndarray, epsilon=1e-12) -> np.ndarray:
         """Calculates the gradient of the cross entropy loss function with respect to y_hat.
 
         :param y_hat: The predicted output tensor.
