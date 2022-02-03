@@ -15,6 +15,7 @@ class DataPoint:
     image: np.ndarray
     label: int
 
+
 @dataclass
 class Dataset:
     """Dataclass used to to store whole dataset of Datapoints.

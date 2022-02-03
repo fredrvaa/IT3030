@@ -126,6 +126,9 @@ class Network:
         After fitting/training, loss and accuracy can be visualized using
         visualize_loss() and visualize_accuracy() respectively.
 
+        If the checkpointing parameters are specified. The model can be saved during fitting, and can be
+        resumed at a later point.
+
         :param X_train: The train data.
         :param y_train: The labels corresponding to the train data.
         :param X_val: The validation data.
@@ -149,11 +152,11 @@ class Network:
 
         is_validating = X_val is not None and y_val is not None
 
-        self.train_loss = []
-        self.train_accuracy = []
+        self.train_loss: list[list[float]] = []
+        self.train_accuracy: list[list[float]] = []
 
-        self.val_loss = []
-        self.val_accuracy = []
+        self.val_loss: list[list[float]] = []
+        self.val_accuracy: list[list[float]] = []
 
         print(f'Resuming fit from epoch {start_epoch}...' if start_epoch > 0 else 'Starting fit...')
         for epoch in range(start_epoch, epochs):
@@ -246,12 +249,6 @@ class Network:
 
         self._latest_epoch = epoch
 
-        # Convert to numpy arrays
-        self.train_loss = np.array(self.train_loss)
-        self.val_loss = np.array(self.val_loss)
-        self.train_accuracy = np.array(self.train_accuracy)
-        self.val_accuracy = np.array(self.val_accuracy)
-
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predicts the output label of a given input sample.
 
@@ -266,17 +263,20 @@ class Network:
 
     def visualize_loss(self) -> None:
         """Visualizes training and validation loss recorded during the previous fit of the network."""
+
         fig, ax = plt.subplots(figsize=(12, 12))
 
         # Plot train loss
-        train_x = self.train_loss[:, 0]
-        train_y = self.train_loss[:, 1]
+        train_loss = np.array(self.train_loss)
+        train_x = train_loss[:, 0]
+        train_y = train_loss[:, 1]
         ax.plot(train_x, train_y, label='Train loss')
 
         # Plot val loss if it has been recorded
-        if self.val_loss.shape[0] > 0:
-            val_x = self.val_loss[:, 0]
-            val_y = self.val_loss[:, 1]
+        if len(self.val_loss) > 0:
+            val_loss = np.array(self.val_loss)
+            val_x = val_loss[:, 0]
+            val_y = val_loss[:, 1]
             ax.plot(val_x, val_y, label='Validation loss')
 
         ax.legend()
@@ -289,17 +289,20 @@ class Network:
 
     def visualize_accuracy(self) -> None:
         """Visualizes training and validation accuracy recorded during the previous fit of the network."""
+
         fig, ax = plt.subplots(figsize=(12, 12))
 
         # Plot train loss
-        train_x = self.train_accuracy[:, 0]
-        train_y = self.train_accuracy[:, 1]
+        train_accuracy = np.array(self.train_accuracy)
+        train_x = train_accuracy[:, 0]
+        train_y = train_accuracy[:, 1]
         ax.plot(train_x, train_y, label='Train Accuracy')
 
         # Plot val loss if it has been recorded
-        if self.val_accuracy.shape[0] > 0:
-            val_x = self.val_accuracy[:, 0]
-            val_y = self.val_accuracy[:, 1]
+        if len(self.val_accuracy) > 0:
+            val_accuracy = np.array(self.val_accuracy)
+            val_x = val_accuracy[:, 0]
+            val_y = val_accuracy[:, 1]
             ax.plot(val_x, val_y, label='Validation Accuracy')
 
         ax.legend()
