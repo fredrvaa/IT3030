@@ -1,4 +1,6 @@
 import pickle
+import os
+from typing import Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +9,8 @@ from prettytable import PrettyTable
 from nn.layer import Layer, HiddenLayer
 from nn.loss import Loss, CrossEntropy
 from nn.regularization import Regularization
+
+from utils.words import get_name
 
 
 class Network:
@@ -30,6 +34,7 @@ class Network:
         :param wreg: The weight regularization.
         :param wrt: The weight regularization type.
         """
+        self.name = get_name()
 
         self.layers: list[Layer] = []
         self.loss_function: Loss = loss_function()
@@ -42,6 +47,17 @@ class Network:
         self.val_loss = []
         self.train_accuracy = []
         self.val_accuracy = []
+
+        # Used to resume fit
+        self._latest_epoch: int = 0
+        self._X_train: Optional[np.ndarray] = None
+        self._y_train: Optional[np.ndarray] = None
+        self._X_val: Optional[np.ndarray] = None
+        self._y_val: Optional[np.ndarray] = None
+        self._epochs: Optional[int] = None
+        self._verbose: Optional[bool] = None
+        self._checkpoint_interval: Optional[int] = None
+        self._checkpoint_folder: Optional[str] = None
 
     def _forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Propagates a single input sample through the whole network (input-, hidden-, and output layers).
@@ -82,24 +98,54 @@ class Network:
 
         self.layers.append(layer)
 
+    def resume(self, epochs: int = None) -> None:
+        self.fit(X_train=self._X_train,
+                 y_train=self._y_train,
+                 X_val=self._X_val,
+                 y_val=self._y_val,
+                 epochs=epochs or self._epochs,
+                 start_epoch=self._latest_epoch + 1,
+                 verbose=self._verbose,
+                 checkpoint_interval=self._checkpoint_interval,
+                 checkpoint_folder=self._checkpoint_folder,
+                 )
+
     def fit(self,
             X_train: np.ndarray,
             y_train: np.ndarray,
-            X_val: np.ndarray = None,
-            y_val: np.ndarray = None,
+            X_val: Optional[np.ndarray] = None,
+            y_val: Optional[np.ndarray] = None,
             epochs: int = 1,
+            start_epoch: int = 0,
             verbose: bool = False,
+            checkpoint_interval: Optional[int] = None,
+            checkpoint_folder: Optional[str] = None,
             ) -> None:
         """Fits the parameters of the network to the training data.
 
         After fitting/training, loss and accuracy can be visualized using
         visualize_loss() and visualize_accuracy() respectively.
 
-        :param X_train: The training data.
-        :param y_train: The labels corresponding to the training data
+        :param X_train: The train data.
+        :param y_train: The labels corresponding to the train data.
+        :param X_val: The validation data.
+        :param y_val: The labels corresponding to the validation data.
         :param epochs: Number of times the whole training set is passed through the network.
+        :param start_epoch: Epoch to start fitting from. Usually only used if resume() is called.
         :param verbose: Prints additional information during fit such as loss and accuracy if set to True.
+        :param checkpoint_interval: Numbers of epochs between checkpointing model.
+        :param checkpoint_folder: Where to store checkpointed models.
         """
+
+        # Store parameters to be used if resume() is called later.
+        self._X_train = X_train
+        self._y_train = y_train
+        self._X_val = X_val
+        self._y_val = y_val
+        self._epochs = epochs
+        self._verbose = verbose
+        self._checkpoint_interval = checkpoint_interval
+        self._checkpoint_folder = checkpoint_folder
 
         is_validating = X_val is not None and y_val is not None
 
@@ -109,8 +155,8 @@ class Network:
         self.val_loss = []
         self.val_accuracy = []
 
-        print('Fitting model to data...')
-        for epoch in range(epochs):
+        print(f'Resuming fit from epoch {start_epoch}...' if start_epoch > 0 else 'Starting fit...')
+        for epoch in range(start_epoch, epochs):
             # Train
             aggregated_train_loss: int = 0
             num_train_correct: int = 0
@@ -135,7 +181,7 @@ class Network:
                 self._backward_pass(J_L_S)
 
                 # If batch size has been processed, update weights
-                if (epoch*len(X_train) + i + 1) % self.batch_size == 0:
+                if (epoch * len(X_train) + i + 1) % self.batch_size == 0:
                     self._update_parameters()
 
             # Record train loss and accuracy
@@ -193,6 +239,12 @@ class Network:
                     classification_table.add_row(['Total', total])
 
                 print(f'{loss_table}\n{accuracy_table}\n{classification_table}')
+
+            if checkpoint_interval is not None and epoch % checkpoint_interval == 0 and epoch != 0:
+                self._latest_epoch = epoch
+                self.save(folder=checkpoint_folder)
+
+        self._latest_epoch = epoch
 
         # Convert to numpy arrays
         self.train_loss = np.array(self.train_loss)
@@ -258,13 +310,18 @@ class Network:
 
         plt.show()
 
-    def save(self, file_name: str) -> None:
+    def save(self, folder: str, file_name: Optional[str] = None) -> None:
         """Saves the Network object to a file.
 
+        :param folder: Where to save the model.
         :param file_name: File name of where to save model. Expects that folder where file should be created exists.
+                          If not provided, a custom name with number of epochs trained is used.
         """
 
-        with open(file_name, 'wb') as file:
+        if file_name is None:
+            file_name = f'{self.name}_{self._latest_epoch}.pkl'
+
+        with open(os.path.join(folder, file_name), 'wb') as file:
             pickle.dump(self, file, pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
@@ -296,7 +353,7 @@ class Network:
             ['Weight reg. type', self.wrt.__class__.__name__],
         ])
 
-        return f'{layer_table.get_string()}\n{parameter_table.get_string()}'
+        return f'Network name: {self.name}\n{layer_table.get_string()}\n{parameter_table.get_string()}'
 
 
 if __name__ == '__main__':
