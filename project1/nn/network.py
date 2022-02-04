@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from prettytable import PrettyTable
 
-from nn.layer import Layer, HiddenLayer
+from nn.layer import Layer, HiddenLayer, OutputActivationLayer, InputLayer
 from nn.loss import Loss, CrossEntropy
 from nn.regularization import Regularization, L2
 
@@ -27,6 +27,7 @@ class Network:
                  batch_size: int = 32,
                  wreg: float = 0.01,
                  wrt: Regularization = L2(),
+                 **kwargs,
                  ):
         """
         :param name: Name of the network. Used when saving to file.
@@ -78,6 +79,7 @@ class Network:
 
         :param J_L_S: The gradient with respect to output.
         """
+
         J_L_N = J_L_S
         for layer in self.layers[::-1]:
             J_L_N = layer.backward_pass(J_L_N)
@@ -88,6 +90,20 @@ class Network:
         layer: HiddenLayer
         for layer in [layer for layer in self.layers if type(layer) == HiddenLayer]:
             layer.update_parameters()
+
+    def _calculate_loss(self, y_hat: np.ndarray, y: np.ndarray) -> float:
+        loss = self.loss_function(y_hat, y)
+        if self.wrt is not None:
+            for layer in self.layers:
+                if issubclass(type(layer), HiddenLayer):
+                    loss += self.wreg * self.wrt(layer.W)
+        return loss
+
+    def _is_correct(self, y_hat: np.ndarray, y: np.ndarray) -> bool:
+        # Create prediction and check if correct
+        prediction = np.zeros(y_hat.shape)
+        prediction[np.argmax(y_hat)] = 1
+        return np.array_equal(prediction, y)
 
     def add_layer(self, layer: Layer) -> None:
         """Appends a layer to the network.
@@ -165,25 +181,21 @@ class Network:
             # Train
             aggregated_train_loss: int = 0
             num_train_correct: int = 0
-            for i, (X, y) in enumerate(zip(X_train, y_train)):
+            for i, (X, y) in enumerate(zip(X_train, y_train)): # Main fit loop
+                # Forward pass
                 y_hat = self._forward_pass(X)
 
-                aggregated_train_loss += self.loss_function(y_hat, y)
-                if self.wrt is not None:
-                    for layer in self.layers:
-                        if type(layer) == HiddenLayer:
-                            aggregated_train_loss += self.wreg * self.wrt(layer.W)
+                # Compute and store loss
+                aggregated_train_loss += self._calculate_loss(y_hat, y)
 
-                # Create prediction and check if correct
-                prediction = np.zeros(y_hat.shape)
-                prediction[np.argmax(y_hat)] = 1
-                if np.array_equal(prediction, y):
+                # Check if prediction is correct
+                if self._is_correct(y_hat, y):
                     num_train_correct += 1
 
-                # Perform backprop by propagating the jacobian of the loss with respect to the (softmax) output
-                # through the network.
-                J_L_S = self.loss_function.gradient(y_hat, y)
-                self._backward_pass(J_L_S)
+                # Backward pass
+                # J_L_O is the jacobian of the loss with respect to the output layer.
+                J_L_O = self.loss_function.gradient(y_hat, y)
+                self._backward_pass(J_L_O)
 
                 # If batch size has been processed, update weights
                 if (epoch * len(X_train) + i + 1) % self.batch_size == 0:
@@ -204,17 +216,14 @@ class Network:
                 aggregated_val_loss: int = 0
                 num_val_correct: int = 0
                 for i, (X, y) in enumerate(zip(X_val, y_val)):
+                    # Forward pass
                     y_hat = self._forward_pass(X)
-                    aggregated_val_loss += self.loss_function(y_hat, y)
-                    if self.wrt is not None:
-                        for layer in self.layers:
-                            if type(layer) == HiddenLayer:
-                                aggregated_val_loss += self.wreg * self.wrt(layer.W)
 
-                    # Create prediction and check if correct
-                    prediction = np.zeros(y_hat.shape)
-                    prediction[np.argmax(y_hat)] = 1
-                    if np.array_equal(prediction, y):
+                    # Compute and store loss
+                    aggregated_val_loss += self._calculate_loss(y_hat, y)
+
+                    # Check if prediction is correct
+                    if self._is_correct(y_hat, y):
                         num_val_correct += 1
                         val_correct[np.argmax(y_hat)] += 1
 
@@ -344,10 +353,20 @@ class Network:
     def __str__(self):
         """Prints all layers and hyperparameters of the network."""
 
-        layer_table = PrettyTable(['Type', 'Size'], title='Layers')
+        layer_table = PrettyTable(['Type', 'Size', 'Activation', 'Learning Rate', 'Wreg.', 'Wreg. Type'], title='Layers')
         layer: Layer
         for layer in self.layers:
-            layer_table.add_row([layer.__class__.__name__, layer.size])
+            if type(layer) == InputLayer:
+                layer_table.add_row([layer.__class__.__name__, layer.size, '--', '--', '--', '--'])
+            elif type(layer) == OutputActivationLayer:
+                layer_table.add_row([layer.__class__.__name__, layer.size, layer.activation, '--', '--', '--'])
+            else:
+                layer_table.add_row([layer.__class__.__name__,
+                                     layer.size,
+                                     layer.activation,
+                                     layer.learning_rate,
+                                     layer.wreg,
+                                     layer.wrt])
 
         parameter_table = PrettyTable(['Parameter', 'Value'], title='Hyperparameters')
         parameter_table.add_rows([

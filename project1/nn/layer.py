@@ -106,10 +106,10 @@ class HiddenLayer(Layer):
         self.b: np.ndarray = np.random.uniform(bias_range[0], bias_range[1], self._output_size)
 
         # Hyperparameters
-        self._activation: Activation = activation
-        self._learning_rate: int = learning_rate
-        self._wreg: float = wreg
-        self._wrt: Regularization = wrt
+        self.activation: Activation = activation
+        self.learning_rate: int = learning_rate
+        self.wreg: float = wreg
+        self.wrt: Regularization = wrt
 
         # Storing gradients
         self.W_gradients: list[np.ndarray] = []
@@ -121,12 +121,12 @@ class HiddenLayer(Layer):
 
     def update_parameters(self) -> None:
         """Updates all weights and biases using the accumulated gradients and clears the gradients."""
-        if self._wrt is not None:
-            self.W += self._learning_rate * self._wreg * self._wrt.gradient(self.W)
+        if self.wrt is not None:
+            self.W += self.learning_rate * self.wreg * self.wrt.gradient(self.W)
 
-        self.W -= self._learning_rate * np.sum(self.W_gradients, axis=0)
+        self.W -= self.learning_rate * np.sum(self.W_gradients, axis=0)
         self.W_gradients = []
-        self.b -= self._learning_rate * np.sum(self.b_gradients, axis=0)
+        self.b -= self.learning_rate * np.sum(self.b_gradients, axis=0)
         self.b_gradients = []
 
     def forward_pass(self, X: np.ndarray) -> np.ndarray:
@@ -138,7 +138,7 @@ class HiddenLayer(Layer):
         """
 
         self._input = X
-        self._output = self._activation(np.dot(X, self.W) + self.b)
+        self._output = self.activation(np.dot(X, self.W) + self.b)
         return self._output
 
     def backward_pass(self, J_L_N: np.ndarray) -> np.ndarray:
@@ -155,7 +155,7 @@ class HiddenLayer(Layer):
         """
 
         # Compute intermediate jacobians
-        J_N_sum = self._activation.gradient(np.diag(self._output))
+        J_N_sum = self.activation.gradient(np.diag(self._output))
         J_N_M = np.dot(J_N_sum, self.W.T)
         J_N_W_hat = np.outer(self._input, np.diag(J_N_sum))
 
@@ -171,16 +171,25 @@ class HiddenLayer(Layer):
         return J_L_M
 
 
-class OutputLayer(Layer):
+class OutputLayer(HiddenLayer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     """Class for output layer.
+
+    This inherits everything from the HiddenLayer class. It is only used to signify the end of the network.
+    """
+
+
+class OutputActivationLayer(Layer):
+    """Class for applying an activation to the output of a network.
 
     This layer can be added onto the network to alter the output of a network with a different activation.
     For classification problems, it is natural to have a SoftMax output layer at the end of the network.
     """
 
-    def __init__(self, input_size: int, activation: Activation = SoftMax()):
+    def __init__(self, input_size: int, output_activation: Activation = SoftMax()):
         self.size: int = input_size
-        self._activation: Activation = activation
+        self.activation: Activation = output_activation
         self._input: Optional[np.ndarray] = None
         self._output: Optional[np.ndarray] = None
 
@@ -192,7 +201,7 @@ class OutputLayer(Layer):
         """
 
         self._input = X
-        self._output = self._activation(X)
+        self._output = self.activation(X)
         return self._output
 
     def backward_pass(self, J_L_O: np.ndarray) -> np.ndarray:
@@ -210,7 +219,7 @@ class OutputLayer(Layer):
         :return : The computed jacobian of the loss with respect to the upstream layer (M).
         """
 
-        J_O_M = self._activation.gradient(self._output)
+        J_O_M = self.activation.gradient(self._output)
         J_L_M = np.dot(J_L_O, J_O_M)
         return J_L_M
 

@@ -1,4 +1,4 @@
-from nn.layer import InputLayer, HiddenLayer, OutputLayer
+from nn.layer import InputLayer, HiddenLayer, OutputLayer, OutputActivationLayer
 from nn.network import Network
 from utils.config_parser import ConfigParser
 
@@ -39,10 +39,15 @@ class NetworkGenerator:
             network.add_layer(HiddenLayer(input_size=prev_size, output_size=kwargs['size'], **kwargs))
             prev_size = layer['size']
 
-        # Add output layer if specified
-        if 'output' in layers:
-            kwargs = {k: v for k, v in layers['output'].items() if v is not None}
-            network.add_layer(OutputLayer(input_size=prev_size, **kwargs))
+        # Add output layer
+        kwargs = {k: v for k, v in layers['output'].items() if v is not None}
+        network.add_layer(OutputLayer(input_size=prev_size, output_size=kwargs['size'], **kwargs))
+        prev_size = layers['output']['size']
+
+        # Add output activation layer if specified
+        if 'output_activation' in globals:
+            network.add_layer(
+                OutputActivationLayer(input_size=prev_size, output_activation=globals['output_activation']))
 
         return network
 
