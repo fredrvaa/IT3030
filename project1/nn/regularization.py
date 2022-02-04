@@ -27,6 +27,9 @@ class Regularization(ABC):
         """
         raise NotImplementedError('Subclass must implement gradient()')
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class L1(Regularization):
     def __call__(self, W: np.ndarray) -> float:

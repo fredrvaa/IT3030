@@ -8,6 +8,9 @@ class Initialization(ABC):
     def __call__(self, input_size: int, output_size: int, *args, **kwargs) -> np.ndarray:
         raise NotImplementedError('Subclasses must implement __call__()')
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class Uniform(Initialization):
     def __call__(self,

@@ -26,6 +26,9 @@ class Activation(ABC):
         """
         raise NotImplementedError('Subclass must implement gradient()')
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class Linear(Activation):
     """Class implementing the linear activation function."""
