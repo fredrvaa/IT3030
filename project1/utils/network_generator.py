@@ -29,15 +29,16 @@ class NetworkGenerator:
         network.add_layer(InputLayer(prev_size))
 
         # Add hidden layers
-        for layer in layers['hidden']:
-            # First load global kwargs
-            kwargs = {k: v for k, v in globals.items() if v is not None}
+        if 'hidden' in layers:
+            for layer in layers['hidden']:
+                # First load global kwargs
+                kwargs = {k: v for k, v in globals.items() if v is not None}
 
-            # Then override/add layer kwargs
-            kwargs.update({k: v for k, v in layer.items() if v is not None})
+                # Then override/add layer kwargs
+                kwargs.update({k: v for k, v in layer.items() if v is not None})
 
-            network.add_layer(HiddenLayer(input_size=prev_size, output_size=kwargs['size'], **kwargs))
-            prev_size = layer['size']
+                network.add_layer(HiddenLayer(input_size=prev_size, output_size=kwargs['size'], **kwargs))
+                prev_size = layer['size']
 
         # Add output layer
         # First load global kwargs
