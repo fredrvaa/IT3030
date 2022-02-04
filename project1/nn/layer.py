@@ -4,7 +4,8 @@ from typing import Optional
 import numpy as np
 
 from nn.activation import Activation, Relu, SoftMax
-from nn.regularization import Regularization
+from nn.initialization import Initialization, GlorotUniform, Uniform
+from nn.regularization import Regularization, L2
 
 
 class Layer(ABC):
@@ -72,12 +73,12 @@ class HiddenLayer(Layer):
                  input_size: int,
                  output_size: int,
                  learning_rate: float = 0.01,
-                 activation: Activation = Relu,
+                 activation: Activation = Relu(),
                  weight_range: tuple[float] = (-0.1, 0.1),
                  bias_range: tuple[float] = (0, 0),
-                 init_scheme: str = 'glorot_uniform',
+                 initialization: Initialization = GlorotUniform(),
                  wreg: float = 0.01,
-                 wrt: Regularization = None,
+                 wrt: Regularization = L2(),
                  **kwargs,
                  ):
         """
@@ -85,9 +86,11 @@ class HiddenLayer(Layer):
         :param output_size: Size of the output of the layer.
         :param learning_rate: Term used to weigh how much of the gradients are added when updating parameters.
         :param activation: The activation function used at the output of the layer.
-        :param weight_range: Interval for the random initialization of weights. Only used if init_scheme is 'uniform'.
+        :param weight_range: Interval for the random initialization of weights. Only used if initialization is Uniform.
         :param bias_range: Interval for the random initialization of biases.
-        :param init_scheme: Weight initialization scheme. Can be 'glorot_uniform', 'glorot_normal', 'uniform'.
+        :param initialization: Weight initialization scheme.
+        :param wreg: Weight regularization constant.
+        :param wrt: Weight regularization type.
         """
 
         # Sizes
@@ -99,38 +102,22 @@ class HiddenLayer(Layer):
         self._weight_range = weight_range
         self._bias_range = bias_range
 
-        self.W: np.ndarray = self._initialize_weights(init_scheme)
+        self.W: np.ndarray = initialization(weight_range)  # weight_range only used if type(initialization) == Uniform
         self.b: np.ndarray = np.random.uniform(bias_range[0], bias_range[1], self._output_size)
 
         # Hyperparameters
-        self._activation: Activation = activation()
+        self._activation: Activation = activation
         self._learning_rate: int = learning_rate
         self._wreg: float = wreg
-        self._wrt: Regularization = wrt() if wrt is not None else None
+        self._wrt: Regularization = wrt
 
         # Storing gradients
         self.W_gradients: list[np.ndarray] = []
         self.b_gradients: list[np.ndarray] = []
 
         # Storing input/output used in backward_pass()
-        self._input: np.ndarray = None
-        self._output: np.ndarray = None
-
-    def _initialize_weights(self, init_scheme: str) -> np.ndarray:
-        if init_scheme == 'glorot_uniform':
-            sd: float = np.sqrt(6.0 / (self._input_size + self._output_size))
-            return np.random.uniform(-sd, sd, (self._input_size, self._output_size))
-        elif init_scheme == 'glorot_normal':
-            sd: float = np.sqrt(2.0 / (self._input_size + self._output_size))
-            return np.random.normal(0.0, sd, (self._input_size, self._output_size))
-        elif init_scheme == 'uniform':
-            return np.random.uniform(
-                self._weight_range[0],
-                self._weight_range[1],
-                (self._input_size, self._output_size)
-            )
-        else:
-            raise ValueError(f'{init_scheme} is not a supported initialization scheme')
+        self._input: Optional[np.ndarray] = None
+        self._output: Optional[np.ndarray] = None
 
     def update_parameters(self) -> None:
         """Updates all weights and biases using the accumulated gradients and clears the gradients."""
