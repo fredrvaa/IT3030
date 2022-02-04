@@ -170,12 +170,6 @@ class Network:
 
         is_validating = X_val is not None and y_val is not None
 
-        self.train_loss: list[list[float]] = []
-        self.train_accuracy: list[list[float]] = []
-
-        self.val_loss: list[list[float]] = []
-        self.val_accuracy: list[list[float]] = []
-
         print(f'Resuming fit from epoch {start_epoch}...' if start_epoch > 0 else 'Starting fit...')
         for epoch in range(start_epoch, epochs):
             # Train
@@ -239,7 +233,7 @@ class Network:
                 loss_table.add_row(['Train', round(train_loss, 2)])
 
                 accuracy_table = PrettyTable(['Dataset', 'Accuracy'], title=f'Accuracy')
-                accuracy_table.add_row(['Train Accuracy', f'{round(train_accuracy * 100, 2)}%'])
+                accuracy_table.add_row(['Train', f'{round(train_accuracy * 100, 2)}%'])
 
                 classification_table = ''
                 if is_validating:
