@@ -1,5 +1,5 @@
 data: # Parameters for the data generation
-  n_samples: 1000 # Number of samples in dataset
+  n_samples: 3000 # Number of samples in dataset
   image_dim: 20 # Dimension of each image NxN
   noise_level: 0.1 # Amount of noise in image. 0.0 -> No noise, 1.0 -> Each pixel is randomly assigned.
   shape_ratio_range: (0.1, 0.9) # Specifies relative size of shape with respect to the image.
@@ -17,7 +17,7 @@ network: # Parameters for the network generation
     input:
       size: 400 # Flattened shape of data. Since the generated images are square, this can be set to image_dim ** 2.
     hidden: # Each entry here (-) specifies a new hidden layer.
-      - size: 100
+      - size: 50
         learning_rate: 0.01 # Can override global learning_rate
         activation: Relu # {Linear, Relu, Sigmoid, Tanh, SoftMax}
         init_scheme: GlorotUniform # {Uniform, GlorotUniform, GlorotNormal}
@@ -39,6 +39,6 @@ network: # Parameters for the network generation
 fit: # Parameters for fitting the network.
   epochs: 100 # Number of epochs (passes through the whole dataset)
   verbose: True # If set to True, a more verbose output can be seen in the terminal during fitting.
-  checkpoint_interval: 10 # Number of epochs between checkpointing model. Can be omitted.
+  checkpoint_interval: 5 # Number of epochs between checkpointing model. Can be omitted.
   checkpoint_folder: 'checkpoints' # Folder where the model is checkpointed/saved to. Can be omitted.
 
