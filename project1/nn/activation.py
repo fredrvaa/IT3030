@@ -117,6 +117,40 @@ class Tanh(Activation):
         return 1 - f**2
 
 
+class SoftMax(Activation):
+    """Class implementing the Softmax activation function."""
+
+    def __call__(self, z: np.ndarray) -> np.ndarray:
+        """Returns the output of the Softmax activation function applied to the input.
+
+        :param z: The input tensor.
+        :return: The output of the Softmax activation function applied to z.
+        """
+
+        e = np.exp(z - np.max(z))
+        return e / e.sum()
+
+    def gradient(self, z: np.ndarray) -> np.ndarray:
+        """Returns the gradient of the Softmax activation function with respect to the input.
+
+        This is done in a rather manual fashion as seen in the lecture slides.
+
+        :param z: The input tensor.
+        :return: The gradient of the Softmax activation function with respect to z.
+        """
+
+        grad = np.diag(z)
+
+        for i in range(len(grad)):
+            for j in range(len(grad)):
+                if i == j:
+                    grad[i][j] = z[i] * (1 - z[j])
+                else:
+                    grad[i][j] = -z[i] * z[j]
+
+        return grad
+
+
 if __name__ == '__main__':
     # Small test suite
     z = np.array([-1, -0.5, 0, 0.001, 0.5, 1])

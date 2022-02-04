@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import numpy as np
 
-from nn.activation import Activation, Relu
+from nn.activation import Activation, Relu, SoftMax
 from nn.regularization import Regularization
 
 
@@ -183,53 +184,47 @@ class HiddenLayer(Layer):
         return J_L_M
 
 
-class SoftmaxLayer(Layer):
-    """Class for softmax output layer.
+class OutputLayer(Layer):
+    """Class for output layer.
 
-    This layer can be added onto the output of a network to compute the softmax of the output. This is usually done
-    for classification problems.
+    This layer can be added onto the network to alter the output of a network with a different activation.
+    For classification problems, it is natural to have a SoftMax output layer at the end of the network.
     """
-    def __init__(self, input_size: int):
-        self.size = input_size
 
-        self._input = None
-        self._output = None
+    def __init__(self, input_size: int, activation: Activation = SoftMax()):
+        self.size: int = input_size
+        self._activation: Activation = activation
+        self._input: Optional[np.ndarray] = None
+        self._output: Optional[np.ndarray] = None
 
     def forward_pass(self, X: np.ndarray) -> np.ndarray:
-        """Computes and returns the softmax of the input.
+        """Computes and returns the activation of the input.
 
         :param X: The input tensor.
         :return: The softmaxed output tensor.
         """
 
         self._input = X
-        e = np.exp(X - np.max(X))
-        self._output = e / e.sum()
+        self._output = self._activation(X)
         return self._output
 
-    def backward_pass(self, J_L_S: np.ndarray) -> np.ndarray:
+    def backward_pass(self, J_L_O: np.ndarray) -> np.ndarray:
         """Computes and returns the jacobian of the loss with respect to the last hidden layer M (J_L_M).
 
-        This layer is the output softmax layer, and we assume the upstream hidden layer to be layer M.
-        A network might look something like this: Input -> M-1 -> M -> Softmax.
+        This layer is the output layer (often with SoftMax activation function), and we assume the upstream hidden
+        layer to be layer M.
 
-        J_L_S is the jacobian of the loss with respect to the output. Here we compute the jacobian of the loss
-        with respect to the last layer (J_L_M). This is done in a rather manual fashion as seen in the lecture slides.
+        A network might look something like this: Input -> M-1 -> M -> Output(Softmax).
 
-        :param J_L_S: The jacobian of the loss with respect to the softmaxed output.
+        J_L_O is the jacobian of the loss with respect to the output. Here we compute the jacobian of the loss
+        with respect to the last layer (J_L_M).
+
+        :param J_L_O: The jacobian of the loss with respect to the output.
         :return : The computed jacobian of the loss with respect to the upstream layer (M).
         """
 
-        J_S_M = np.diag(self._output)
-
-        for i in range(len(J_S_M)):
-            for j in range(len(J_S_M)):
-                if i == j:
-                    J_S_M[i][j] = self._output[i] * (1 - self._output[j])
-                else:
-                    J_S_M[i][j] = -self._output[i] * self._output[j]
-
-        J_L_M = np.dot(J_L_S, J_S_M)
+        J_O_M = self._activation.gradient(self._output)
+        J_L_M = np.dot(J_L_O, J_O_M)
         return J_L_M
 
 
@@ -239,11 +234,11 @@ if __name__ == '__main__':
     i = InputLayer(3)
     h1 = HiddenLayer(3, 3)
     h2 = HiddenLayer(3, 2)
-    o = SoftmaxLayer(2)
+    o = OutputLayer(2)
 
     output = o.forward_pass(h2.forward_pass(h1.forward_pass(i.forward_pass(X))))
 
     print("Output of toy network:", output)
 
-    s = SoftmaxLayer(2)
+    s = OutputLayer(2)
     print("Output of softmax:", s.forward_pass(np.array([0.41643299, 0.])))  # -> [0.60262938 0.39737062]
