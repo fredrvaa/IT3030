@@ -40,7 +40,11 @@ class NetworkGenerator:
             prev_size = layer['size']
 
         # Add output layer
-        kwargs = {k: v for k, v in layers['output'].items() if v is not None}
+        # First load global kwargs
+        kwargs = {k: v for k, v in globals.items() if v is not None}
+        # Then override/add layer kwargs
+        kwargs.update({k: v for k, v in layers['output'].items() if v is not None})
+
         network.add_layer(OutputLayer(input_size=prev_size, output_size=kwargs['size'], **kwargs))
         prev_size = layers['output']['size']
 
