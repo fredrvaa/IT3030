@@ -8,7 +8,7 @@ from prettytable import PrettyTable
 
 from nn.layer import Layer, HiddenLayer
 from nn.loss import Loss, CrossEntropy
-from nn.regularization import Regularization
+from nn.regularization import Regularization, L2
 
 from utils.words import get_name
 
@@ -21,27 +21,29 @@ class Network:
     """
 
     def __init__(self,
-                 loss_function: Loss = CrossEntropy,
+                 name: Optional[str] = None,
+                 loss_function: Loss = CrossEntropy(),
                  learning_rate: float = 0.001,
                  batch_size: int = 32,
                  wreg: float = 0.01,
-                 wrt: Regularization = None,
+                 wrt: Regularization = L2(),
                  ):
         """
+        :param name: Name of the network. Used when saving to file.
         :param loss_function: The loss function used at the output of the network.
         :param learning_rate: The global learning rate. Single layers can override this locally.
         :param batch_size: How many samples are passed through the network before updating parameters in the layers.
         :param wreg: The weight regularization.
         :param wrt: The weight regularization type.
         """
-        self.name = get_name()
+        self.name: str = get_name() if name is None else name
 
         self.layers: list[Layer] = []
-        self.loss_function: Loss = loss_function()
+        self.loss_function: Loss = loss_function
         self.learning_rate: int = learning_rate
         self.batch_size: int = batch_size
         self.wreg: float = wreg
-        self.wrt: Regularization = wrt() if wrt is not None else None
+        self.wrt: Regularization = wrt
 
         self.train_loss = []
         self.val_loss = []

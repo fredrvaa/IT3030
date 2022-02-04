@@ -1,0 +1,44 @@
+data: # Parameters for the data generation
+  n_samples: 1000 # Number of samples in dataset
+  image_dim: 20 # Dimension of each image NxN
+  noise_level: 0.1 # Amount of noise in image. 0.0 -> No noise, 1.0 -> Each pixel is randomly assigned.
+  shape_ratio_range: (0.1, 0.9) # Specifies relative size of shape with respect to the image.
+  split_ratios: (0.7, 0.2, 0.1) # Train, val, test split ratios.
+  centered: False # Wether or not the shape should be centered in the image.
+network: # Parameters for the network generation
+  globals: # Applies to the whole network. Some of these can be overridden by the layers (e.g. learning_rate).
+    name: Network1 # Name of the network. If not set, a random name is assigned.
+    loss_function: CrossEntropy # {MSE, CrossEntropy}
+    learning_rate: 0.001
+    batch_size: 50
+    wreg: 0.001 # Weight regularization constant.
+    wrt: L2 # {L1, L2, none}
+  layers: # Specifies the layers in the network. The layers are added to the network in the order they are added here.
+    input:
+      size: 400 # Flattened shape of data. Since the generated images are square, this can be set to image_dim ** 2.
+    hidden: # Each entry here (-) specifies a new hidden layer.
+      - size: 100
+        learning_rate: 0.01 # Can override global learning_rate
+        activation: Relu # {Linear, Relu, Sigmoid, Tanh, SoftMax}
+        init_scheme: GlorotUniform # {Uniform, GlorotUniform, GlorotNormal}
+        weight_range: (-0.5, 0.5) # Range used for Uniform weight initialization. Not used by GlorotUniform/GlorotNormal
+        bias_range: (0, 0) # Range used to uniformly set initial bias.
+      - size: 20
+        learning_rate: 0.01 # Can override global learning_rate
+        activation: Relu # {Linear, Relu, Sigmoid, Tanh, SoftMax}
+        init_scheme: GlorotUniform # {Uniform, GlorotUniform, GlorotNormal}
+        weight_range: (-0.5, 0.5) # Range used for Uniform weight initialization. Not used by GlorotUniform/GlorotNormal
+        bias_range: (0, 0) # Range used to uniformly set initial bias.
+      - size: 5 # Last layer should be set to the number of classes in the dataset. 5 in this assignment.
+        activation: Relu
+        init_scheme: GlorotUniform
+        weight_range: (-0.5, 0.5)
+        bias_range: (0, 0)
+    output: # Additional output layer. Can be omitted.
+      activation: SoftMax # {SoftMax}
+fit: # Parameters for fitting the network.
+  epochs: 100 # Number of epochs (passes through the whole dataset)
+  verbose: True # If set to True, a more verbose output can be seen in the terminal during fitting.
+  checkpoint_interval: 10 # Number of epochs between checkpointing model. Can be omitted.
+  checkpoint_folder: 'checkpoints' # Folder where the model is checkpointed/saved to. Can be omitted.
+

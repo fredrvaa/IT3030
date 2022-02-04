@@ -102,7 +102,7 @@ class HiddenLayer(Layer):
         self._weight_range = weight_range
         self._bias_range = bias_range
 
-        self.W: np.ndarray = initialization(weight_range)  # weight_range only used if type(initialization) == Uniform
+        self.W: np.ndarray = initialization(self._input_size, self._output_size, weight_range)
         self.b: np.ndarray = np.random.uniform(bias_range[0], bias_range[1], self._output_size)
 
         # Hyperparameters
