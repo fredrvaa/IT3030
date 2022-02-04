@@ -13,7 +13,7 @@ network: # Parameters for the network generation
     batch_size: 10
     wreg: 0.001 # Weight regularization constant.
     wrt: L2 # {L1, L2, none}
-    output_activation: SoftMax
+    output_activation: SoftMax # {SoftMax}. Can be omitted.
   layers: # Specifies the layers in the network. The layers are added to the network in the order they are added here.
     input:
       size: 100 # Flattened shape of data. Since the generated images are square, this can be set to image_dim ** 2.
@@ -30,6 +30,7 @@ network: # Parameters for the network generation
       init_scheme: GlorotUniform
       weight_range: (-0.5, 0.5)
       bias_range: (0, 0)
+      wreg: 0.1
 fit: # Parameters for fitting the network.
   epochs: 100 # Number of epochs (passes through the whole dataset)
   verbose: True # If set to True, a more verbose output can be seen in the terminal during fitting.
