@@ -78,7 +78,7 @@ class HiddenLayer(Layer):
                  bias_range: tuple[float] = (0, 0),
                  initialization: Initialization = GlorotUniform(),
                  wreg: float = 0.01,
-                 wrt: Regularization = L2(),
+                 wrt: Regularization = None,
                  **kwargs,
                  ):
         """

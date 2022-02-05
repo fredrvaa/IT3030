@@ -26,7 +26,7 @@ class Network:
                  learning_rate: float = 0.001,
                  batch_size: int = 32,
                  wreg: float = 0.01,
-                 wrt: Regularization = L2(),
+                 wrt: Regularization = None,
                  **kwargs,
                  ):
         """
@@ -175,7 +175,7 @@ class Network:
             # Train
             aggregated_train_loss: int = 0
             num_train_correct: int = 0
-            for i, (X, y) in enumerate(zip(X_train, y_train)): # Main fit loop
+            for i, (X, y) in enumerate(zip(X_train, y_train)):  # Main fit loop
                 # Forward pass
                 y_hat = self._forward_pass(X)
 
@@ -366,9 +366,9 @@ class Network:
         parameter_table.add_rows([
             ['Loss function', self.loss_function],
             ['Learning rate', self.learning_rate],
-            ['Batch size', self.learning_rate],
+            ['Batch size', self.batch_size],
             ['Weight regularization', self.wreg],
-            ['Weight reg. type', self.wrt.__class__.__name__],
+            ['Weight reg. type', self.wrt],
         ])
 
         return f'Network name: {self.name}\n{layer_table.get_string()}\n{parameter_table.get_string()}'
