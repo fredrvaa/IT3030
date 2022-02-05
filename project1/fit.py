@@ -15,6 +15,7 @@ parser.add_argument('-s', '--save_folder', help='path/to/save/folder', type=str,
 parser.add_argument('-d', '--display_number',
                     help='Number of data samples from the training set to display before fit.',
                     type=int, required=False, default=0)
+parser.add_argument('-v', '--visualize', help='Flag used to visualize network after fit.', action='store_true')
 args = parser.parse_args()
 
 # Parse config file
@@ -39,6 +40,10 @@ if not yes_or_no(input('Start fit? [y/n]')):
 
 # Fit network
 network.fit(X_train, y_train, X_val, y_val, **config.get_fit_parameters())
+
+if args.visualize:
+    network.visualize_loss()
+    network.visualize_accuracy()
 
 if args.save_folder is not None:
     network.save(args.save_folder)
