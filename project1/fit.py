@@ -12,6 +12,9 @@ from utils.yn import yes_or_no
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', help='path/to/config/file', type=str, required=True)
 parser.add_argument('-s', '--save_folder', help='path/to/save/folder', type=str, default=None)
+parser.add_argument('-d', '--display_number',
+                    help='Number of data samples from the training set to display before fit.',
+                    type=int, required=False, default=0)
 args = parser.parse_args()
 
 # Parse config file
@@ -20,6 +23,9 @@ config = ConfigParser(args.config)
 # Generate dataset and load dataset into train, val, test partitions
 dataset: Dataset = DataGenerator(**config.get_data_parameters()).generate_dataset()
 (X_train, y_train), (X_val, y_val), (X_test, y_test) = dataset.load_data(flatten=True)
+
+if args.display_number > 0:
+    dataset.visualize_data('train', args.display_number)
 
 # Generate network
 network: Network = NetworkGenerator(config.get_network_parameters()).generate_network()
