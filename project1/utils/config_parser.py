@@ -8,6 +8,7 @@ from nn.initialization import *
 from nn.layer import *
 from nn.regularization import *
 from nn.loss import *
+from utils.verbosity_level import *
 
 # Keys that are not evaluated in the recursive dictionary parsing.
 STRING_EXCEPTIONS = ['name', 'checkpoint_folder']

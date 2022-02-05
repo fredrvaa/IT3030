@@ -1,6 +1,5 @@
 from nn.layer import InputLayer, HiddenLayer, OutputLayer, OutputActivationLayer
 from nn.network import Network
-from utils.config_parser import ConfigParser
 
 
 class NetworkGenerator:
@@ -58,6 +57,7 @@ class NetworkGenerator:
 
 
 if __name__ == '__main__':
+    from utils.config_parser import ConfigParser
     config = ConfigParser('configs/config_base.yaml')
     network = NetworkGenerator(config.get_network_parameters()).generate_network()
     print(network)

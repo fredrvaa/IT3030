@@ -8,8 +8,9 @@ from prettytable import PrettyTable
 
 from nn.layer import Layer, HiddenLayer, OutputActivationLayer, InputLayer
 from nn.loss import Loss, CrossEntropy
-from nn.regularization import Regularization, L2
+from nn.regularization import Regularization
 
+from utils.verbosity_level import VerbosityLevel
 from utils.words import get_name
 
 
@@ -58,9 +59,9 @@ class Network:
         self._X_val: Optional[np.ndarray] = None
         self._y_val: Optional[np.ndarray] = None
         self._epochs: Optional[int] = None
-        self._verbose: Optional[bool] = None
         self._checkpoint_interval: Optional[int] = None
         self._checkpoint_folder: Optional[str] = None
+        self._verbosity_level: Optional[VerbosityLevel] = None  # Also used in _forward_pass() and _backward_pass()
 
     def _forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Propagates a single input sample through the whole network (input-, hidden-, and output layers).
@@ -72,6 +73,8 @@ class Network:
         output = X
         for layer in self.layers:
             output = layer.forward_pass(output)
+            if self._verbosity_level >= VerbosityLevel.DEBUG:
+                print(f'Forward output of {layer.__class__.__name__}\n{output}\n')
         return output
 
     def _backward_pass(self, J_L_S: np.ndarray) -> None:
@@ -81,8 +84,11 @@ class Network:
         """
 
         J_L_N = J_L_S
-        for layer in self.layers[::-1]:
+        for layer in self.layers[:0:-1]:
+            if self._verbosity_level >= VerbosityLevel.DEBUG:
+                print(f'Jacobian of loss with respect to {layer.__class__.__name__}\n{J_L_N}\n')
             J_L_N = layer.backward_pass(J_L_N)
+
 
     def _update_parameters(self) -> None:
         """Updates the parameters in all hidden layers (only layers with parameters) of the network."""
@@ -123,7 +129,7 @@ class Network:
                  y_val=self._y_val,
                  epochs=epochs or self._epochs,
                  start_epoch=self._latest_epoch + 1,
-                 verbose=self._verbose,
+                 verbosity_level=self._verbosity_level,
                  checkpoint_interval=self._checkpoint_interval,
                  checkpoint_folder=self._checkpoint_folder,
                  )
@@ -135,7 +141,7 @@ class Network:
             y_val: Optional[np.ndarray] = None,
             epochs: int = 1,
             start_epoch: int = 0,
-            verbose: bool = False,
+            verbosity_level: VerbosityLevel = VerbosityLevel.MINIMAL,
             checkpoint_interval: Optional[int] = None,
             checkpoint_folder: Optional[str] = None,
             ) -> None:
@@ -153,7 +159,11 @@ class Network:
         :param y_val: The labels corresponding to the validation data.
         :param epochs: Number of times the whole training set is passed through the network.
         :param start_epoch: Epoch to start fitting from. Usually only used if resume() is called.
-        :param verbose: Prints additional information during fit such as loss and accuracy if set to True.
+        :param verbosity_level: Prints additional information based on verbosity level.
+                                VerbosityLevel.None: No print.
+                                VerbosityLevel.MINIMAL: Only epoch number.
+                                VerbosityLevel.STATS: Training and validation stats.
+                                VerbosityLevel.DEBUG:
         :param checkpoint_interval: Numbers of epochs between checkpointing model.
         :param checkpoint_folder: Where to store checkpointed models.
         """
@@ -164,29 +174,46 @@ class Network:
         self._X_val = X_val
         self._y_val = y_val
         self._epochs = epochs
-        self._verbose = verbose
+        self._verbosity_level = verbosity_level
         self._checkpoint_interval = checkpoint_interval
         self._checkpoint_folder = checkpoint_folder
 
-        is_validating = X_val is not None and y_val is not None
+        is_validating = X_val is not None and y_val is not None and X_val.shape[0] > 0 and y_val.shape[0] > 0
 
         print(f'Resuming fit from epoch {start_epoch}...' if start_epoch > 0 else 'Starting fit...')
         for epoch in range(start_epoch, epochs):
             # Train
             aggregated_train_loss: int = 0
             num_train_correct: int = 0
+
+            # Shuffle training set
+            stochastic_indeces = np.arange(len(X_train))
+            np.random.shuffle(stochastic_indeces)
+            X_train = X_train[stochastic_indeces]
+            y_train = y_train[stochastic_indeces]
             for i, (X, y) in enumerate(zip(X_train, y_train)):  # Main fit loop
+                if verbosity_level >= VerbosityLevel.MINIMAL:
+                    print(f'Starting epoch {epoch}...')
                 # Forward pass
+                if verbosity_level >= VerbosityLevel.DEBUG:
+                    print('\n---FORWARD PASS---')
                 y_hat = self._forward_pass(X)
 
                 # Compute and store loss
-                aggregated_train_loss += self._calculate_loss(y_hat, y)
+                loss = self._calculate_loss(y_hat, y)
+                aggregated_train_loss += loss
+                if verbosity_level >= VerbosityLevel.DEBUG:
+                    print('\n---OUTPUT AND LOSS---')
+                    print(f'y_hat: {y_hat}\ny: {y}\nLoss: {loss}')
 
                 # Check if prediction is correct
                 if self._is_correct(y_hat, y):
                     num_train_correct += 1
 
                 # Backward pass
+                if verbosity_level >= VerbosityLevel.DEBUG:
+                    print('\n---BACKWARD PASS---')
+
                 # J_L_O is the jacobian of the loss with respect to the output layer.
                 J_L_O = self.loss_function.gradient(y_hat, y)
                 self._backward_pass(J_L_O)
@@ -227,8 +254,9 @@ class Network:
                 self.val_loss.append([epoch, val_loss])
                 self.val_accuracy.append([epoch, val_accuracy])
 
-            print(f'Finished epoch {epoch}')
-            if verbose:
+            if verbosity_level >= VerbosityLevel.MINIMAL:
+                print(f'Finished epoch {epoch}')
+            if verbosity_level >= VerbosityLevel.STATS:
                 loss_table = PrettyTable(['Dataset', 'Loss'], title=f'Loss')
                 loss_table.add_row(['Train', round(train_loss, 2)])
 
