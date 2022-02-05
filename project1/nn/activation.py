@@ -62,7 +62,7 @@ class Relu(Activation):
         :return: The output of the ReLU activation function applied to z.
         """
 
-        return np.maximum(0, z)
+        return np.maximum(0.0, z)
 
     def gradient(self, z: np.ndarray) -> np.ndarray:
         """Returns the gradient of the ReLU activation function with respect to the input.
@@ -71,7 +71,7 @@ class Relu(Activation):
         :return: The gradient of the ReLU activation function with respect to z.
         """
 
-        return (z > 0) * 1
+        return (z > 0.0) * 1
 
 
 class Sigmoid(Activation):
