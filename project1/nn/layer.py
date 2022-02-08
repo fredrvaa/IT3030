@@ -155,7 +155,7 @@ class HiddenLayer(Layer):
         """
 
         # Compute intermediate jacobians
-        J_N_sum = self.activation.gradient(np.diag(self._output))
+        J_N_sum = np.diag(self.activation.gradient(self._output))
         J_N_M = np.dot(J_N_sum, self.W.T)
         J_N_W_hat = np.outer(self._input, np.diag(J_N_sum))
 

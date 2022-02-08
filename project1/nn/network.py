@@ -61,7 +61,7 @@ class Network:
         self._epochs: Optional[int] = None
         self._checkpoint_interval: Optional[int] = None
         self._checkpoint_folder: Optional[str] = None
-        self._verbosity_level: Optional[VerbosityLevel] = None  # Also used in _forward_pass() and _backward_pass()
+        self._verbosity_level: VerbosityLevel = VerbosityLevel.NONE  # Also used in _forward_pass() and _backward_pass()
 
     def _forward_pass(self, X: np.ndarray) -> np.ndarray:
         """Propagates a single input sample through the whole network (input-, hidden-, and output layers).
@@ -84,7 +84,7 @@ class Network:
         """
 
         J_L_N = J_L_S
-        for layer in self.layers[:0:-1]:
+        for layer in self.layers[::-1]:
             if self._verbosity_level >= VerbosityLevel.DEBUG:
                 print(f'Jacobian of loss with respect to {layer.__class__.__name__}\n{J_L_N}\n')
             J_L_N = layer.backward_pass(J_L_N)
@@ -192,10 +192,9 @@ class Network:
             X_train = X_train[stochastic_indeces]
             y_train = y_train[stochastic_indeces]
             for i, (X, y) in enumerate(zip(X_train, y_train)):  # Main fit loop
-                if verbosity_level >= VerbosityLevel.MINIMAL:
-                    print(f'Starting epoch {epoch}...')
                 # Forward pass
                 if verbosity_level >= VerbosityLevel.DEBUG:
+                    print(f'Starting epoch {epoch}...')
                     print('\n---FORWARD PASS---')
                 y_hat = self._forward_pass(X)
 
@@ -293,6 +292,16 @@ class Network:
         prediction = np.zeros(y_hat.shape)
         prediction[np.argmax(y_hat)] = 1
         return prediction
+
+    def test(self, X_test: np.ndarray, y_test) -> float:
+        """Gives accuracy on test set."""
+        num_correct = 0
+        for X, y in zip(X_test, y_test):
+            y_hat = self._forward_pass(X)
+            if self._is_correct(y_hat, y):
+                num_correct += 1
+        return num_correct / X_test.shape[0]
+
 
     def visualize_loss(self) -> None:
         """Visualizes training and validation loss recorded during the previous fit of the network."""
