@@ -1,3 +1,5 @@
+"""SCRIPT USED TO RESUME TRAINING MODEL"""
+
 import argparse
 
 # Parse CLI arguments

@@ -1,3 +1,5 @@
+"""SCRIPT USED TO FIT NEW MODEL TO DATA"""
+
 import argparse
 
 from data_utils.data_generator import DataGenerator
@@ -12,7 +14,7 @@ from utils.yn import yes_or_no
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', help='path/to/config/file', type=str, required=True)
 parser.add_argument('-s', '--save_folder', help='path/to/save/folder', type=str, default=None)
-parser.add_argument('-d', '--display_number',
+parser.add_argument('-n', '--display_number',
                     help='Number of data samples from the training set to display before fit.',
                     type=int, required=False, default=0)
 parser.add_argument('-v', '--visualize', help='Flag used to visualize network after fit.', action='store_true')
@@ -35,11 +37,19 @@ network: Network = NetworkGenerator(config.get_network_parameters()).generate_ne
 print(dataset)
 print(network)
 
+if X_test.size > 0 and y_test.size > 0:
+    test_accuracy = network.test(X_test, y_test)
+    print('TEST ACCURACY BERFORE FIT: ', test_accuracy)
+
 if not yes_or_no(input('Start fit? [y/n]')):
     exit()
 
 # Fit network
 network.fit(X_train, y_train, X_val, y_val, **config.get_fit_parameters())
+
+if X_test.size > 0 and y_test.size > 0:
+    test_accuracy = network.test(X_test, y_test)
+    print('TEST ACCURACY AFTER FIT: ', test_accuracy)
 
 if args.visualize:
     network.visualize_loss()

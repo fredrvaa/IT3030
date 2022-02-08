@@ -1,3 +1,5 @@
+"""SCRIPT USED TO VISUALIZE LOSS AND ACCURACY DURING TRAINING OF A TRAINED MODEL"""
+
 import argparse
 from nn.network import Network
 
