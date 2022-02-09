@@ -13,8 +13,8 @@ class Shapes(Enum):
     cross = 2
     circle = 3
     filled_circle = 4
-    # horizontal_line = 3
-    # vertical_line = 4
+    # horizontal_line = 5
+    # vertical_line = 6
 
 
 class DataGenerator:

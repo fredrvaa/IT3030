@@ -94,10 +94,18 @@ class Network:
         """Updates the parameters in all hidden layers (only layers with parameters) of the network."""
 
         layer: HiddenLayer
-        for layer in [layer for layer in self.layers if type(layer) == HiddenLayer]:
+        for layer in [layer for layer in self.layers if issubclass(type(layer), HiddenLayer)]:
             layer.update_parameters()
 
     def _calculate_loss(self, y_hat: np.ndarray, y: np.ndarray) -> float:
+        """Calculates loss of function
+
+        Uses regularization if initialized with a regularization.
+
+        :param y_hat: Prediction
+        :param y: Ground truth
+        :return: Loss
+        """
         loss = self.loss_function(y_hat, y)
         if self.wrt is not None:
             for layer in self.layers:
@@ -106,6 +114,12 @@ class Network:
         return loss
 
     def _is_correct(self, y_hat: np.ndarray, y: np.ndarray) -> bool:
+        """Checks whether prediction is correct.
+
+        :param y_hat: Prediction
+        :param y: Ground truth
+        :return: Whether prediction is correct
+        """
         # Create prediction and check if correct
         prediction = np.zeros(y_hat.shape)
         prediction[np.argmax(y_hat)] = 1
@@ -123,6 +137,11 @@ class Network:
         self.layers.append(layer)
 
     def resume(self, epochs: int = None) -> None:
+        """Resumes fit with a potentially new number of epochs.
+
+        :param epochs: New number of epochs
+        """
+
         self.fit(X_train=self._X_train,
                  y_train=self._y_train,
                  X_val=self._X_val,
@@ -384,20 +403,19 @@ class Network:
     def __str__(self):
         """Prints all layers and hyperparameters of the network."""
 
-        layer_table = PrettyTable(['Type', 'Size', 'Activation', 'Learning Rate', 'Wreg.', 'Wreg. Type'], title='Layers')
+        layer_table = PrettyTable(['Type', 'Size', 'Activation', 'Learning Rate'], title='Layers')
         layer: Layer
         for layer in self.layers:
             if type(layer) == InputLayer:
-                layer_table.add_row([layer.__class__.__name__, layer.size, '--', '--', '--', '--'])
+                layer_table.add_row([layer.__class__.__name__, layer.size, '--', '--'])
             elif type(layer) == OutputActivationLayer:
-                layer_table.add_row([layer.__class__.__name__, layer.size, layer.activation, '--', '--', '--'])
+                layer_table.add_row([layer.__class__.__name__, layer.size, layer.activation, '--'])
             else:
                 layer_table.add_row([layer.__class__.__name__,
                                      layer.size,
                                      layer.activation,
-                                     layer.learning_rate,
-                                     layer.wreg,
-                                     layer.wrt])
+                                     layer.learning_rate
+                                     ])
 
         parameter_table = PrettyTable(['Parameter', 'Value'], title='Hyperparameters')
         parameter_table.add_rows([

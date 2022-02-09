@@ -2,3 +2,7 @@ __pycache__
 *.pyc
 *.pkl
 models
+configs
+checkpoints
+
+!configs/config_base.yaml
