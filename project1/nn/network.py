@@ -77,13 +77,13 @@ class Network:
                 print(f'Forward output of {layer.__class__.__name__}\n{output}\n')
         return output
 
-    def _backward_pass(self, J_L_S: np.ndarray) -> None:
+    def _backward_pass(self, J_L_O: np.ndarray) -> None:
         """Propagates the computed loss gradient through the whole network.
 
-        :param J_L_S: The gradient with respect to output.
+        :param J_L_O: The gradient with respect to output.
         """
 
-        J_L_N = J_L_S
+        J_L_N = J_L_O
         for layer in self.layers[::-1]:
             if self._verbosity_level >= VerbosityLevel.DEBUG:
                 print(f'Jacobian of loss with respect to {layer.__class__.__name__}\n{J_L_N}\n')
@@ -232,7 +232,7 @@ class Network:
                 if verbosity_level >= VerbosityLevel.DEBUG:
                     print('\n---BACKWARD PASS---')
 
-                # J_L_O is the jacobian of the loss with respect to the output layer.
+                # J_L_O is the jacobian of the loss with respect to the output.
                 J_L_O = self.loss_function.gradient(y_hat, y)
                 self._backward_pass(J_L_O)
 
